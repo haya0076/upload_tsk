@@ -682,5 +682,47 @@ fGetRowData = vRslt
 End Function
 
 
+LS_BC*macrobook_tsk_220104.xlsm*LinkSht*B*C
+****
+*PRG_GET_FOLDER*C:\Users\admin\Documents\tsk\tester*project source folder*
+****
+****
+****
+****
+*PRG_GET_MATCHPTN*Sub|Function|Property |sql|select|\.Execute|tester**
+**Sub|Function|Property **
+**sql**
+**select**
+**\.Execute**
+****
+****
+**tester**
+****
+****
+*PRG_GET_MUTEPTN*(Sub|Function|Property)\s?([\_\d\w]+)\(|Select Case|End Select|\.Select|Attribute|DebugOut|For Each|^\''|Selection\.Insert|Selection\.Delete|(End|Exit)\s?(Sub|Function)**
+* *(Sub|Function|Property)\s?([\_\d\w]+)\(**
+**Select Case|End Select**
+**\.Select**
+**Attribute**
+**DebugOut**
+**For Each**
+**^\''*MuteComment*
+**Selection\.Insert|Selection\.Delete**
+**(End|Exit)\s?(Sub|Function)**
+****
+****
+****
+****
+****
+****
+****
+*RGX_VBATRIMN*\(?\s_[\s\r]+\)?**
+*RGX_DEVIDEEXP*(.+) = (.+)*use with submatch*
+*RGX_FNCNAME*(Sub|Function|Property)\s?([\_\d\w]+)\(*oMatch.submatches(1)*
+****
+*RGX_JOINSPLITED**strsql = select 'a.b$cde " & vblf*
+***strwsql = *
+****
+****
 
 
