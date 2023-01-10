@@ -34,8 +34,7 @@ End With
 End Function
 
 
-
-Function fCreateFncListRtn(inptFolderPath As String) As String
+Function fCreatePrjFncList(inptFolderPath As String) As String
 Dim vFile As Variant
 Dim sFolder As String: sFolder = inptFolderPath
 Dim sLine As String
@@ -68,13 +67,37 @@ For Each vFile In fGetFilePathInFolder(sFolder) 'Folder path("C:\ANY") : string 
 Next vFile
 
 '!YET if duplicate function name
-fCreateFncListRtn = sResult
+fCreatePrjFncList = sResult
 
 End Function
 
 
 
-Sub Main2() 'get hole text
+Sub DownloadObjectList()
+Dim vFile As Variant
+Dim sFolder As String: sFolder = fKey2Val("LS_BC", "PRG_GET_FOLDER")
+Dim sLine As String
+Dim sResult As String
+
+With SelectOrCreateWs("OBJ_LIST")
+    .Cells.Clear
+End With
+
+
+'MAKE FUNCTION NAME LIST
+For Each vFile In fGetFilePathInFolder(sFolder) 'Folder path("C:\ANY") : string  =>  File list : object
+
+        With SelectOrCreateWs("OBJ_LIST")
+            .Cells(Cells(Rows.Count, 1).End(xlUp).row + 1, 1).Value = Dir(CStr(vFile))
+        End With
+    
+Next vFile
+
+End Sub
+
+
+
+Sub DownloadObjDetail() 'get hole text
 Dim vFile As Variant
 Dim sFolder As String: sFolder = fKey2Val("LS_BC", "PRG_GET_FOLDER")
 Dim sText As String
@@ -102,21 +125,14 @@ sMatchPtn = CStr(fKey2Val("LS_BC", "PRG_GET_MATCHPTN"))
 'RegxPattern Mute
 sMutePtn = CStr(fKey2Val("LS_BC", "PRG_GET_MUTEPTN")): If sMutePtn = "" Then sMutePtn = "====================DMY_PTN======================"
 'RegxPattern (Sub|Func|Property) List                'YET \\_ <- ??
-'sFncNames = fReplace(fCreateFncListRtn(sFolder), _
+sFncNames = fReplace(fCreatePrjFncList(sFolder), _
                                     "_", _
                                     "\_")
-
 
 
 ' >> OUTPUT ON SHEET
 
 For Each vFile In fGetFilePathInFolder(sFolder) 'Folder path("C:\ANY") : string  =>  File list : object
-
-    With SelectOrCreateWs("OBJ_LIST")
-        .Cells.Clear
-        .Cells(Cells(Rows.Count, 1).End(xlUp).row + 1, 1).Value = Dir(CStr(vFile))
-    End With
-Stop
 
     With CreateObject("Scripting.FileSystemObject").OpenTextFile(CStr(vFile))
             
@@ -171,6 +187,8 @@ Stop
                         .Cells(lRow, fCol("D")).Value = fKey2Val("GET_FILETYPE", Dir(CStr(vFile)))
                         .Cells(lRow, fCol("E")).Value = Dir(CStr(vFile)) & "-" & lCnt  'Uniq Key
                     
+                        '>>
+                    
                         'Set fnc
                         If fRegxFirstMatch(sLine, _
                                                         fKey2Val("LS_BC", "RGX_FNCNAME")) <> "#VALUE!" Then
@@ -195,7 +213,7 @@ Stop
                         
                         
                         
-                        
+                        '<<
                         
                     
                     'next row
@@ -682,47 +700,48 @@ fGetRowData = vRslt
 End Function
 
 
-LS_BC*macrobook_tsk_220104.xlsm*LinkSht*B*C
-****
-*PRG_GET_FOLDER*C:\Users\admin\Documents\tsk\tester*project source folder*
-****
-****
-****
-****
-*PRG_GET_MATCHPTN*Sub|Function|Property |sql|select|\.Execute|tester**
-**Sub|Function|Property **
-**sql**
-**select**
-**\.Execute**
-****
-****
-**tester**
-****
-****
-*PRG_GET_MUTEPTN*(Sub|Function|Property)\s?([\_\d\w]+)\(|Select Case|End Select|\.Select|Attribute|DebugOut|For Each|^\''|Selection\.Insert|Selection\.Delete|(End|Exit)\s?(Sub|Function)**
-* *(Sub|Function|Property)\s?([\_\d\w]+)\(**
-**Select Case|End Select**
-**\.Select**
-**Attribute**
-**DebugOut**
-**For Each**
-**^\''*MuteComment*
-**Selection\.Insert|Selection\.Delete**
-**(End|Exit)\s?(Sub|Function)**
-****
-****
-****
-****
-****
-****
-****
-*RGX_VBATRIMN*\(?\s_[\s\r]+\)?**
-*RGX_DEVIDEEXP*(.+) = (.+)*use with submatch*
-*RGX_FNCNAME*(Sub|Function|Property)\s?([\_\d\w]+)\(*oMatch.submatches(1)*
-****
-*RGX_JOINSPLITED**strsql = select 'a.b$cde " & vblf*
-***strwsql = *
-****
-****
+Function fSplit(ByVal inptStr As String, ByVal inptCol As Integer, Optional ByVal inptSplt As String = ",", Optional inptMatch As Boolean = False) As String
+Dim sStr As String: sStr = inptStr
+Dim lCol As Integer: lCol = inptCol
+Dim sSplt As String: sSplt = inptSplt
+Dim sRslt As String
+Dim aStr() As String
 
+aStr = Split(sStr, sSplt)
+
+If UBound(aStr) = -1 Or UBound(aStr) = 0 Or lCol = 0 Then
+    sRslt = sStr
+ElseIf lCol > UBound(aStr) + 1 Then
+    sRslt = sStr
+ElseIf lCol < 0 Then
+    sRslt = aStr(UBound(aStr) + 1 + lCol)
+Else
+    sRslt = aStr(lCol - 1)
+End If
+
+
+If inptMatch = True And sRslt = inptStr Then sRslt = ""
+
+fSplit = sRslt
+
+End Function
+
+
+Function fIndent(inptPref As String, inptTxt As String, inptSt As Long) As String
+
+'If inptSt - Len(inptPref) < 0 Then
+'    fIndent = inptPref & " " & inptTxt
+'ElseIf inptPref = "" Then
+'    fIndent = Application.WorksheetFunction.Rept(" ", inptSt) & " " & inptTxt
+'Else
+'    fIndent = inptPref _
+'              & " " & _
+'             Application.WorksheetFunction.Rept(" ", inptSt - Len(inptPref)) & inptTxt
+'End If
+
+fIndent = inptPref _
+               & " " & _
+              Application.WorksheetFunction.Rept(" ", inptSt) & inptTxt
+
+End Function
 
