@@ -73,7 +73,7 @@ End Function
 
 
 
-Sub DownloadObjectList()
+Sub DownloadObjectFileList()
 Dim vFile As Variant
 Dim sFolder As String: sFolder = fKey2Val("LS_BC", "PRG_GET_FOLDER")
 Dim sLine As String
@@ -97,7 +97,7 @@ End Sub
 
 
 
-Sub DownloadObjDetail() 'get hole text
+Sub DownloadObjList(inptMatchType As String) 'get hole text
 Dim vFile As Variant
 Dim sFolder As String: sFolder = fKey2Val("LS_BC", "PRG_GET_FOLDER")
 Dim sText As String
@@ -111,24 +111,32 @@ Dim sLine As String
 Dim slineTmp As String
 Dim sMatchPtn As String
 Dim sMutePtn As String:
-Dim sthOBJDTL As Worksheet: Set shtOBJDTL = SelectOrCreateWs("OBJ_DTL")
+Dim sthOBJDTL As Worksheet
 Dim sFncNames As String
 Dim tStack As tStack
-If shtOBJDTL Is Nothing Then printLog ("[FAIL] does not find worksheet, be sure that window frame is only single"): Exit Sub
-shtOBJDTL.Cells.Clear
-
 
 ' >> Get Regx Pattern
 
 'RegxPattern Match
-sMatchPtn = CStr(fKey2Val("LS_BC", "PRG_GET_MATCHPTN"))
+Select Case inptMatchType
+    Case "FNC"
+        sMatchPtn = CStr(fKey2Val("LS_BC", "PRG_GET_MATCHPTN_FNC"))
+        Set shtOBJDTL = SelectOrCreateWs("OBJ_FNC")
+    Case "DTL"
+        sMatchPtn = CStr(fKey2Val("LS_BC", "PRG_GET_MATCHPTN"))
+        Set shtOBJDTL = SelectOrCreateWs("OBJ_DTL")
+    Case Else
+        printLog ("inptMatchType is FNC or DTL only")
+End Select
+
+shtOBJDTL.Cells.Clear
+
 'RegxPattern Mute
 sMutePtn = CStr(fKey2Val("LS_BC", "PRG_GET_MUTEPTN")): If sMutePtn = "" Then sMutePtn = "====================DMY_PTN======================"
 'RegxPattern (Sub|Func|Property) List                'YET \\_ <- ??
 sFncNames = fReplace(fCreatePrjFncList(sFolder), _
                                     "_", _
                                     "\_")
-
 
 ' >> OUTPUT ON SHEET
 
@@ -490,6 +498,9 @@ Dim sWb As Workbook: If inptWb = "" Then Set sWb = ThisWorkbook Else Set sWb = W
 Dim s As Worksheet
 Dim sht As Worksheet
 
+'YET
+'If shtOBJDTL Is Nothing Then printLog ("[FAIL] does not find worksheet, be sure that window frame is only single"): Exit Sub
+
 If sSht = "" Then printLog ("Sheet Name Is Empty"): Exit Function
 'If Not sWb = ThisWorkbook.Name Then printLog ("External Workbook : SelectOrAddWs")
 
@@ -519,6 +530,24 @@ End Function
 'regural expression
 
 '==================================================================================================
+
+
+Function fRegxMatch(ByVal inptStr As String, _
+                                  ByVal inptPattern As String, _
+                                  Optional inptIndex As Long = 0, _
+                                  Optional inptErrMsg As String = "#VALUE!") As String
+'[usage] named parameter
+'Print fRegxMatch("ABCDE1234", "XYZ", inptErrMsg:="Oooops!")
+'Oooops!
+
+If fRegxMatchs(inptStr, inptPattern) Is Nothing Then
+    fRegxMatch = inptErrMsg
+Else
+    fRegxMatch = fRegxMatchs(inptStr, inptPattern)(inptIndex)
+End If
+
+End Function
+
 
 
 Function fRegxMatchs(ByVal inptStr As String, _
@@ -591,7 +620,15 @@ End Function
 
 
 '値の取得""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-Function fKey2Val(inptLabel As String, inptKey As String, Optional inptSht As String = "LinkSht") As String
+Function fKey2Val(inptLabel As String, _
+                            inptKey As String, _
+                            Optional inptErrMsg As String = "#VALUE!", _
+                            Optional inptSht As String = "LinkSht") As String
+                            
+'[usage] named parameter
+'Print fRegxMatch("ABCDE1234", "XYZ", inptErrMsg:="Oooops!")
+'Oooops!
+
 Dim sLabel As String: sLabel = inptLabel
 Dim sKey As String: sKey = inptKey
 Dim sData As Variant
@@ -600,6 +637,7 @@ Dim sShtName As String: sShtName = inptSht
 Dim rRng As Range: Set rRng = ThisWorkbook.Sheets(sShtName).Rows(1)
 Dim lIndex As Long
 Dim bMatch As Boolean
+Dim sErrMsg As String: sErrMsg = inptErrMsg
 
 '検索シートの指定列から検索キーと一致した行の配列データを取得
 sData = fGetRowData(ThisWorkbook.Name, rRng.Worksheet.Name, sLabel, "A")
@@ -607,7 +645,7 @@ sData = fGetRowData(ThisWorkbook.Name, rRng.Worksheet.Name, sLabel, "A")
 '検索キーとの一致なし
 If UBound(sData) = -1 Then
     Call printLog("fGetRowData fail : " & inptLabel & " " & inptKey & " " & inptSht)
-    fKey2Val = "#N/A#": Exit Function
+    fKey2Val = sErrMsg: Exit Function
 End If
 
 '行から必要なパラメーターを取り出し
@@ -617,10 +655,10 @@ Dim sKeyCol As String: sKeyCol = WorksheetFunction.Trim(sData(4))
 Dim sRtnCol As String: sRtnCol = WorksheetFunction.Trim(sData(5))
 
 'エラー出力
-If sWb = "" Or sWb = "#N/A#" Then Call printLog("sWb : " & sWb)
-If sWs = "" Or sWs = "#N/A#" Then Call printLog("sWs : " & sWs)
-If sKeyCol = "" Or sKeyCol = "#N/A#" Then Call printLog("sKeyCol : " & sKeyCol)
-If sRtnCol = "" Or sRtnCol = "#N/A#" Then Call printLog("sRtnCol : " & sRtnCol)
+If sWb = "" Or sWb = sErrMsg Then Call printLog("sWb : " & sWb)
+If sWs = "" Or sWs = sErrMsg Then Call printLog("sWs : " & sWs)
+If sKeyCol = "" Or sKeyCol = sErrMsg Then Call printLog("sKeyCol : " & sKeyCol)
+If sRtnCol = "" Or sRtnCol = sErrMsg Then Call printLog("sRtnCol : " & sRtnCol)
 
 
 sResult = fGetCellData(sWb, sWs, sKey, sKeyCol, sRtnCol)
