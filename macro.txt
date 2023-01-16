@@ -18,6 +18,30 @@ Type tIndexedtext
 End Type
 
 
+Function fIndentSqlText(inptCMD As String, inptTxt As String, inptLv As Long)
+Dim sSp As String
+Dim sTxt As String
+
+If inptLv <= 0 Then Debug.Print "Division by zero ": Exit Function
+If inptLv = 1 Then
+    sSp = ""
+Else
+    sSp = WorksheetFunction.Rept(" ", inptLv)
+End If
+
+If Trim(inptTxt) = "," Then: sTxt = "        ,"
+
+fIndentSqlText = sSp & _
+                 WorksheetFunction.Rept(" ", 9 - Len(inptCMD)) & _
+                 inptCMD & _
+                 " " & _
+                 inptTxt
+
+
+End Function
+
+
+
 Sub clearImmediate()
 
 Debug.Print String(1000, vbLf)
@@ -34,11 +58,19 @@ End With
 End Function
 
 
-Function fCreatePrjFncList(inptFolderPath As String) As String
+Sub DownloadMatchList()
+Dim shtOut As Worksheet: Set shtOut = SelectOrCreateWs("OutPut" & "_" & Format(Now, "yymmddhhssmm"))
 Dim vFile As Variant
-Dim sFolder As String: sFolder = inptFolderPath
+Dim sFolder As String: sFolder = fKey2Val("LS_BC", "PRG_GET_FOLDER")
+Dim sMatchKey As String: sMatchKey = fKey2Val("LS_BC", "PRG_TMP_MATCH_KEY", inptErrMsg:="NotMatch")
 Dim sLine As String
+Dim lRow As Long: lRow = 1
+Dim lCnt As Long: lCnt = 1 'total line count
+Dim lIndex As Long 'temp index
+
 Dim sResult As String
+
+If sMatchKey = "NotMatch" Or sMatchKey = "" Then printLog ("DownloadMatchList Key2Ver Error")
 
 'MAKE FUNCTION NAME LIST
 For Each vFile In fGetFilePathInFolder(sFolder) 'Folder path("C:\ANY") : string  =>  File list : object
@@ -50,13 +82,17 @@ For Each vFile In fGetFilePathInFolder(sFolder) 'Folder path("C:\ANY") : string 
                 sLine = CStr(.readline)
                 
                 'regx match
-                If fRegxTest(sLine, fKey2Val("LS_BC", "RGX_FNCNAME")) Then
+                If fRegxTest(sLine, sMatchKey) Then
+                
+                        .Cells(lRow, fCol("A")).Value = lIndex
+                        .Cells(lRow, fCol("B")).Value = sLine
+                        .Cells(lRow, fCol("C")).Value = Dir(CStr(vFile))
+                        .Cells(lRow, fCol("D")).Value = fKey2Val("GET_FILETYPE", Dir(CStr(vFile)))
+                        .Cells(lRow, fCol("E")).Value = Dir(CStr(vFile)) & "-" & lCnt  'Uniq Key
                     
-                    sResult = WorksheetFunction.TextJoin("|" _
-                                                                                    , True _
-                                                                                    , fRegxFirstMatch(sLine, fKey2Val("LS_BC", "RGX_FNCNAME"), 1) _
-                                                                                    , sResult)
+                    sResult = WorksheetFunction.TextJoin("|", True, sResult, sLine)
 
+                
                 End If
                 
             Loop 'read sLine
@@ -69,7 +105,7 @@ Next vFile
 '!YET if duplicate function name
 fCreatePrjFncList = sResult
 
-End Function
+End Sub
 
 
 
@@ -661,7 +697,7 @@ If sKeyCol = "" Or sKeyCol = sErrMsg Then Call printLog("sKeyCol : " & sKeyCol)
 If sRtnCol = "" Or sRtnCol = sErrMsg Then Call printLog("sRtnCol : " & sRtnCol)
 
 
-sResult = fGetCellData(sWb, sWs, sKey, sKeyCol, sRtnCol)
+sResult = fGetCellData(sWb, sWs, sKey, sKeyCol, sRtnCol, sErrMsg)
 
 fKey2Val = sResult
 
@@ -669,7 +705,7 @@ End Function
 
 
 '検索キーからセルデータを取得する""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-Private Function fGetCellData(inptWb As String, inptWs As String, inptKey As String, inptKeyCol As String, inptTargetCol As String) As String
+Private Function fGetCellData(inptWb As String, inptWs As String, inptKey As String, inptKeyCol As String, inptTargetCol As String, inptErrMsg As String) As String
 
 Dim sWbName As String: sWbName = inptWb
 Dim sWsName As String: sWsName = inptWs
@@ -678,6 +714,8 @@ Dim sKey As String: sKey = inptKey
 Dim sTargetCol As String: sTargetCol = inptTargetCol
 Dim sMatchRow As String
 Dim sRslt As String
+Dim sErrMsg As String: sErrMsg = inptErrMsg
+
 On Error Resume Next
 
 With Workbooks(sWbName).Worksheets(sWsName)
@@ -697,7 +735,7 @@ With Workbooks(sWbName).Worksheets(sWsName)
     If sMatchRow <> "" Then
         sRslt = .Cells(CLng(sMatchRow), sTargetCol).Value
     Else
-        sRslt = "#N/A#"
+        sRslt = sErrMsg
     End If
 End With
 
