@@ -18,28 +18,6 @@ Type tIndexedtext
 End Type
 
 
-Function fIndentSqlText(inptCMD As String, inptTxt As String, inptLv As Long)
-Dim sSp As String
-Dim sTxt As String
-
-If inptLv <= 0 Then Debug.Print "Division by zero ": Exit Function
-If inptLv = 1 Then
-    sSp = ""
-Else
-    sSp = WorksheetFunction.Rept(" ", inptLv)
-End If
-
-If Trim(inptTxt) = "," Then: sTxt = "        ,"
-
-fIndentSqlText = sSp & _
-                 WorksheetFunction.Rept(" ", 9 - Len(inptCMD)) & _
-                 inptCMD & _
-                 " " & _
-                 inptTxt
-
-
-End Function
-
 
 
 Sub clearImmediate()
@@ -58,11 +36,58 @@ End With
 End Function
 
 
-Sub DownloadMatchList()
-Dim shtOut As Worksheet: Set shtOut = SelectOrCreateWs("OutPut" & "_" & Format(Now, "yymmddhhssmm"))
+
+'Function fGetFncCall() As String
+'Dim vFile As Variant
+'Dim sFolder As String: sFolder = fKey2Val("LS_BC", "PRG_GET_FOLDER")
+'Dim sMatchKey As String: sMatchKey = fKey2Val("LS_BC", "PRG_GET_MATCHPTN_FNCN", inptErrMsg:="NotMatch")
+''YET K2V (Sub|Function)\s?([\_\d\w]+)\(
+''If sMatchKey = "NotMatch" Or sMatchKey = "" Then printLog ("fGetFncCall: Key2Ver Error"): Exit Sub
+'Dim sLine As String
+'Dim lRow As Long: lRow = 1
+'Dim lCnt As Long: lCnt = 1 'total line count
+'Dim lIndex As Long 'temp index
+'
+'Dim sResult As String
+'
+'
+'For Each vFile In fGetFilePathInFolder(sFolder) 'Folder path("C:\ANY") : string  =>  File list : object
+'
+'    With CreateObject("Scripting.FileSystemObject").OpenTextFile(CStr(vFile))
+'
+'            Do While .AtEndOfStream <> True
+'
+'                sLine = CStr(.readline)
+'
+'                'regx match
+'                If fRegxTest(sLine, sMatchKey) Then
+'
+'
+'                    HERE
+'                    sResult = WorksheetFunction.TextJoin("|", True, sResult, sLine)
+'
+'
+'                End If
+'
+'            Loop 'read sLine
+'
+'    .Close
+'    End With 'open file
+'
+'Next vFile
+'
+''!YET if duplicate function name
+'fGetFncCall = sResult
+'
+'End Function
+
+
+Function fGetFncCall() As String
 Dim vFile As Variant
 Dim sFolder As String: sFolder = fKey2Val("LS_BC", "PRG_GET_FOLDER")
-Dim sMatchKey As String: sMatchKey = fKey2Val("LS_BC", "PRG_TMP_MATCH_KEY", inptErrMsg:="NotMatch")
+If fKey2Val("LS_BC", "PRG_DBG", "NOT") = "NOT" Then Stop 'RW/PC
+If fKey2Val("LS_BC", "PRG_GET_FNCCALL", "") = "" Then Stop '(Sub|Function)\s?([\_\d\w]+)\(
+Dim sMatchKey As String: sMatchKey = fKey2Val("LS_BC", "PRG_GET_FNCCALL", inptErrMsg:="NotMatch")
 Dim sLine As String
 Dim lRow As Long: lRow = 1
 Dim lCnt As Long: lCnt = 1 'total line count
@@ -83,16 +108,15 @@ For Each vFile In fGetFilePathInFolder(sFolder) 'Folder path("C:\ANY") : string 
                 
                 'regx match
                 If fRegxTest(sLine, sMatchKey) Then
-                
-                        .Cells(lRow, fCol("A")).Value = lIndex
-                        .Cells(lRow, fCol("B")).Value = sLine
-                        .Cells(lRow, fCol("C")).Value = Dir(CStr(vFile))
-                        .Cells(lRow, fCol("D")).Value = fKey2Val("GET_FILETYPE", Dir(CStr(vFile)))
-                        .Cells(lRow, fCol("E")).Value = Dir(CStr(vFile)) & "-" & lCnt  'Uniq Key
-                    
+'
+'                        .Cells(lRow, fCol("A")).Value = lIndex
+'                        .Cells(lRow, fCol("B")).Value = sLine
+'                        .Cells(lRow, fCol("C")).Value = Dir(CStr(vFile))
+'                        .Cells(lRow, fCol("D")).Value = fKey2Val("GET_FILETYPE", Dir(CStr(vFile)))
+'                        .Cells(lRow, fCol("E")).Value = Dir(CStr(vFile)) & "-" & lCnt  'Uniq Key
+'
                     sResult = WorksheetFunction.TextJoin("|", True, sResult, sLine)
 
-                
                 End If
                 
             Loop 'read sLine
@@ -103,9 +127,9 @@ For Each vFile In fGetFilePathInFolder(sFolder) 'Folder path("C:\ANY") : string 
 Next vFile
 
 '!YET if duplicate function name
-fCreatePrjFncList = sResult
+fGetFncCall = sResult
 
-End Sub
+End Function
 
 
 
@@ -133,7 +157,7 @@ End Sub
 
 
 
-Sub DownloadObjList(inptMatchType As String) 'get hole text
+Sub DownloadObjList() 'get hole text
 Dim vFile As Variant
 Dim sFolder As String: sFolder = fKey2Val("LS_BC", "PRG_GET_FOLDER")
 Dim sText As String
@@ -153,18 +177,8 @@ Dim tStack As tStack
 
 ' >> Get Regx Pattern
 
-'RegxPattern Match
-Select Case inptMatchType
-    Case "FNC"
-        sMatchPtn = CStr(fKey2Val("LS_BC", "PRG_GET_MATCHPTN_FNC"))
-        Set shtOBJDTL = SelectOrCreateWs("OBJ_FNC")
-    Case "DTL"
-        sMatchPtn = CStr(fKey2Val("LS_BC", "PRG_GET_MATCHPTN"))
-        Set shtOBJDTL = SelectOrCreateWs("OBJ_DTL")
-    Case Else
-        printLog ("inptMatchType is FNC or DTL only")
-End Select
-
+sMatchPtn = CStr(fKey2Val("LS_BC", "PRG_GET_MATCHPTN"))
+Set shtOBJDTL = SelectOrCreateWs("OBJ_DTL")
 shtOBJDTL.Cells.Clear
 
 'RegxPattern Mute
@@ -223,35 +237,38 @@ For Each vFile In fGetFilePathInFolder(sFolder) 'Folder path("C:\ANY") : string 
                     And Not fRegxTest(sLine, sMutePtn) _
                     Or fRegxTest(sLine, sFncNames) _
                 Then
-                
-                        'Output line , RegxPatterns1,2
-                        .Cells(lRow, fCol("A")).Value = lIndex
-                        .Cells(lRow, fCol("B")).Value = sLine
-                        .Cells(lRow, fCol("C")).Value = Dir(CStr(vFile))
-                        .Cells(lRow, fCol("D")).Value = fKey2Val("GET_FILETYPE", Dir(CStr(vFile)))
-                        .Cells(lRow, fCol("E")).Value = Dir(CStr(vFile)) & "-" & lCnt  'Uniq Key
-                    
-                        '>>
                     
                         'Set fnc
-                        If fRegxFirstMatch(sLine, _
-                                                        fKey2Val("LS_BC", "RGX_FNCNAME")) <> "#VALUE!" Then
+                        If fRegxFirstMatch(sLine, fKey2Val("LS_BC", "RGX_FNCNAME")) <> "#VALUE!" Then
                             tStack.crrFncName = fRegxFirstMatch(sLine, fKey2Val("LS_BC", "RGX_FNCNAME"), 1)
                             tStack.outPutRow = lRow
                             tStack.sqlCnt = 0 'clng(tStack.sqlCnt) + 1
                             
-                            .Cells(lRow, fCol("F")).Value = tStack.crrFncName & tStack.outPutRow & tStack.sqlCnt
+                            .Cells(lRow, fCol("A")).Value = tStack.crrFncName & tStack.outPutRow & tStack.sqlCnt
                         
                         End If
+                        
                         
                         'SQL Execute
-                        If fRegxFirstMatch(sLine, ".\Execute") <> "#VALUE!" Then
-                            .Cells(lRow, fCol("G")).Value = sLine
+                        'YET K2V
+                        If fRegxFirstMatch(sLine, "\.Execute") <> "#VALUE!" _
+                               Or _
+                           fRegxFirstMatch(sLine, "\.Open") <> "#VALUE!" _
+                        Then
+                            .Cells(lRow, fCol("B")).Value = sLine
                         End If
+                                                
                         
+                        'Output line , RegxPatterns1,2
                         
-                        
-                        
+                        Dim tmpCol As Integer: tmpCol = 3
+                        .Cells(lRow, tmpCol + 0).Value = lIndex
+                        .Cells(lRow, tmpCol + 1).Value = sLine
+                        .Cells(lRow, tmpCol + 2).Value = Dir(CStr(vFile))
+                        .Cells(lRow, tmpCol + 3).Value = fKey2Val("GET_FILETYPE", Dir(CStr(vFile)))
+                        .Cells(lRow, tmpCol + 4).Value = Dir(CStr(vFile)) & "-" & lCnt  'Uniq Key
+                    
+                        '>>
                         
                         
                         
@@ -424,24 +441,24 @@ End Function
 
 
 
-Sub FillWsFunction_OBJLIST()
-
-Dim i As Long: i = 2
-Dim shtOBJLST: shtOBJLST = "OBJ_LIST"
-
-    Do Until Sheets(shtOBJLST).Cells(i, fCol("A")).Value = ""
-    
-     With Sheets(shtOBJLST)
-                
-            .Cells(i, fCol("C")).Value = fRegxFirstMatch(.Cells(i, fCol("A")).Value, "[\d\w]+\.(bas|form|cls)")
-
-             i = i + 1
-             
-        End With
-        
-    Loop
-    
-End Sub
+'Sub FillWsFunction_OBJLIST()
+'
+'Dim i As Long: i = 2
+'Dim shtOBJLST: shtOBJLST = "OBJ_LIST"
+'
+'    Do Until Sheets(shtOBJLST).Cells(i, fCol("A")).Value = ""
+'
+'     With Sheets(shtOBJLST)
+'
+'            .Cells(i, fCol("C")).Value = fRegxFirstMatch(.Cells(i, fCol("A")).Value, "[\d\w]+\.(bas|form|cls)")
+'
+'             i = i + 1
+'
+'        End With
+'
+'    Loop
+'
+'End Sub
 
 
 
@@ -576,10 +593,15 @@ Function fRegxMatch(ByVal inptStr As String, _
 'Print fRegxMatch("ABCDE1234", "XYZ", inptErrMsg:="Oooops!")
 'Oooops!
 
-If fRegxMatchs(inptStr, inptPattern) Is Nothing Then
+If fRegxMatchs(inptStr, inptPattern) Is Nothing Or _
+    fRegxMatchs(inptStr, inptPattern).Count <= inptIndex Then
+
     fRegxMatch = inptErrMsg
+
 Else
+    
     fRegxMatch = fRegxMatchs(inptStr, inptPattern)(inptIndex)
+
 End If
 
 End Function
@@ -803,21 +825,55 @@ fSplit = sRslt
 End Function
 
 
-Function fIndent(inptPref As String, inptTxt As String, inptSt As Long) As String
+Function fIndent(inptCmd As String, inptTxt As String, inptLv As Integer, Optional inptMax As Integer = 9, Optional inptIndent As Integer = 6) As String
 
-'If inptSt - Len(inptPref) < 0 Then
-'    fIndent = inptPref & " " & inptTxt
-'ElseIf inptPref = "" Then
-'    fIndent = Application.WorksheetFunction.Rept(" ", inptSt) & " " & inptTxt
-'Else
-'    fIndent = inptPref _
-'              & " " & _
-'             Application.WorksheetFunction.Rept(" ", inptSt - Len(inptPref)) & inptTxt
-'End If
+Dim sLhs As String: sLhs = Trim(inptCmd)
+Dim sRhs As String: sRhs = Trim(inptTxt)
+Dim IMax As Integer: IMax = inptMax
+Dim IIdt As Integer: IIdt = inptIndent
+Dim lRpt As Integer
+Dim sPls1 As String: sPls = ""
 
-fIndent = inptPref _
-               & " " & _
-              Application.WorksheetFunction.Rept(" ", inptSt) & inptTxt
+If inptLv <= 0 Then fIndent = "Division by zero": Exit Function
 
+
+Select Case sLhs
+
+Case "SELECT"
+'2
+    sPls1 = "  "
+
+Case "FROM"
+'2
+    sPls1 = "  "
+
+Case "AND"
+    sPls1 = "   "
+
+Case "OR"
+    sPls1 = "    "
+
+Case "INSERT"
+    sPls1 = "  "
+
+Case "ALTER"
+    sPls1 = "  "
+
+Case "LEFT JOIN"
+    sPls1 = " "
+
+Case ","
+    sPls1 = "      "
+
+End Select
+
+
+fIndent = Application.WorksheetFunction.Rept(" ", IIdt * CInt(inptLv - 1)) _
+           & sPls1 _
+           & Application.WorksheetFunction.Rept(" ", IMax - Len(sLhs)) _
+           & sLhs _
+           & "  " _
+           & sRhs
+                
 End Function
 
