@@ -22,6 +22,352 @@ Type tIndexedtext
 End Type
 
 
+Sub ■()
+End Sub
+
+Sub ooo_SETUP_BOOK_oooo()
+End Sub
+
+
+Sub SetUpPrgWorkBook()
+
+'Delete Sht Not(SEUP Or LINKSHT Or USER_PRM)
+'Create Sht (PRG_PRM)
+
+Dim ws As Worksheet
+Dim sWs As String
+Dim sPtn As String
+Dim o As Object
+
+Application.DisplayAlerts = False
+
+
+For Each ws In ThisWorkbook.Sheets
+
+    If Not fRegxTest(ws.Name, "SETUP|LinkSht|PRG_PRM") Then
+        ws.Delete
+    End If
+
+Next ws
+
+With SelectOrCreateWs("PRG_PRM")
+'pg use only
+    .Visible = False
+End With
+
+With SelectOrCreateWs("LinkSht")
+'pg use only
+    .Visible = False
+End With
+
+
+
+sWs = "USER_PRM"
+
+With SelectOrCreateWs(sWs)
+    'CONST
+    
+    .Cells.Clear
+    .Range("A1").Value = "FILE"
+    .Range("B1").Value = "VARIANT"
+    .Range("C1").Value = "VALUE"
+    .Range("D1").Value = "SHEET"
+    .Range("E1").Value = "COMMENT"
+    
+    'Const\s+([_\d\w]+)[\s\d\w]+=\s+([_""\d\w]+)
+    Call PrgDownloadMatches(fKey2Val("PRG_SHT_PRG", "PRG_PTN_CNST"), sWs, "A:0,0|B:0,1")
+    
+End With
+
+
+sWs = "DOWNLOAD"
+
+With SelectOrCreateWs(sWs)
+    'CONST
+    
+    .Cells.Clear
+    .Range("A1").Value = "FILE"
+    .Range("B1").Value = "VARIANT"
+    .Range("C1").Value = "VALUE"
+    .Range("D1").Value = "SHEET"
+    .Range("E1").Value = "COMMENT"
+    
+    'Const\s+([_\d\w]+)[\s\d\w]+=\s+([_""\d\w]+)
+    Call PrgDownloadMatches("|", sWs, "A:0,0")
+
+End With
+
+
+With SelectOrCreateWs("PRG_SVR")
+    'SERVER
+    
+    
+End With
+
+With SelectOrCreateWs("PRG_VER")
+    'VERSION
+    
+    
+End With
+
+
+Application.DisplayAlerts = True
+
+End Sub
+
+
+Sub ■■()
+
+End Sub
+
+
+Function fPrgRet1(inptStr As String, inptCase As String) As String
+'inptStr = column | match | submatch
+
+Dim sResult As String
+
+Select Case inptCase
+    Case "column"
+        sResult = fSplit(inptStr, 1, ":")
+        
+    Case "match"
+        sResult = fSplit( _
+                        fSplit(inptStr, 2, ":") _
+                        , 1 _
+                        , ",")
+    Case "submatch"
+        sResult = fSplit( _
+                        fSplit(inptStr, 2, ":") _
+                        , 2 _
+                        , ",")
+    Case Else
+        Stop
+End Select
+    
+fPrgRet1 = sResult
+    
+End Function
+
+Sub PrgDownloadMatches(inptPtn As String, inptShtName As String, inptCells As String)
+'full code patern => "|"
+Dim vFile As Variant
+Dim sFolder As String: sFolder = fKey2Val("PRG_SHT_SETUP", "PRJ_SRC_PATH")
+Dim sLine As String
+Dim lRow As Long: lRow = 2
+Dim lCnt As Long: lCnt = 1    'total line count
+Dim lIndex As Long            'temp index
+
+Dim sPtn As String: sPtn = inptPtn
+Dim sShtN As String: sShtN = inptShtName
+Dim sCells As String: sCells = inptCells
+Dim sResult As String
+
+                                    
+'Dim sthOut As Worksheet: Set shtout = SelectOrCreateWs("FNC_LIST")
+
+'If sMatchKey = "NotMatch" Or sMatchKey = "" Then printLog ("DownloadMatchList Key2Ver Error")
+
+'MAKE FUNCTION NAME LIST
+For Each vFile In fGetFilePathInFolder(sFolder) 'Folder path("C:\ANY") : string  =>  File list : object
+
+    With CreateObject("Scripting.FileSystemObject").OpenTextFile(CStr(vFile))
+            
+     Do While .AtEndOfStream <> True
+                
+                sLine = CStr(.readline)
+            
+                 'Join split lines
+                 If Right(sLine, 2) = " _" Then
+                  'splited
+                  
+                      lIndex = lCnt
+                      slinetmp = sLine
+                     
+                     Do
+                         sLine = CStr(.readline)
+                         slinetmp = slinetmp & sLine
+                          lCnt = lCnt + 1
+                     Loop While Right(sLine, 2) = " _"
+                     
+                     sLine = slinetmp
+                     sLine = fReplaceRegx(sLine, "\(?\s_[\s\r]+\)?", " ", True) & vbLf  'replace "_ \n" to " "
+                     slinetmp = ""
+                       
+                Else
+                'not
+                     lIndex = lCnt
+                     sLine = sLine
+                   
+                 End If
+    
+    
+                ' >> regx match
+                
+                'out put line
+                With ThisWorkbook.Sheets(sShtN)
+                
+                        If fRegxTest(sLine, sPtn) = True Then
+                        
+                            For Each v In Split(sCells, "|")
+                                
+                                        .Cells(lRow, 1).Value = _
+                                            Dir(vFile) & "(" & lCnt & ")"
+
+
+                                        .Cells(lRow, fPrgRet1(CStr(v), "column")).Value = _
+                                            fRegxMatch(sLine _
+                                                        , sPtn _
+                                                        , fPrgRet1(CStr(v), "match") _
+                                                        , fPrgRet1(CStr(v), "submatch"))
+                                
+                            Next v
+                         
+                        'Output line , RegxPatterns1,2
+                         
+'                         Dim tmpCol As Integer: tmpCol = 1
+'                         .Cells(lRow, tmpCol + 0).Value = lIndex
+'                         .Cells(lRow, tmpCol + 1).Value = sLine
+'                         .Cells(lRow, tmpCol + 2).Value = Dir(CStr(vFile))
+'                         .Cells(lRow, tmpCol + 3).Value = fKey2Val("GET_FILETYPE", Dir(CStr(vFile)))
+'                         .Cells(lRow, tmpCol + 4).Value = Dir(CStr(vFile)) & "-" & lCnt  'Uniq Key
+                    
+                    
+                    
+                        'next row
+                        lRow = lRow + 1
+                           
+                        
+                        End If
+                        
+   
+'
+'                End If
+'
+                'next line
+                lCnt = lCnt + 1
+                    
+                    
+'               'REGX IN sLine
+'
+'                Debug.Print sLine
+'                If fRegxTest(sLine, sMatchPtn) Then Debug.Print "true"
+
+            End With 'Sheet
+
+            Loop 'PER sLine
+                
+     .Close
+    End With 'ReadObj
+
+    
+    'stack=======================
+
+    lCnt = 1
+
+Next vFile
+
+'!YET if duplicate function name
+fGetFncCall = sResult
+End Sub
+
+
+
+
+
+Sub SETUP_SHT_SVR()
+
+
+fPrgCreateRegxPtn
+
+
+End Sub
+
+
+
+Sub ooo_CREATE_PATERN_ooo()
+End Sub
+
+
+Function fPrgCreateRegxPtn(inptPtn As String, inptMatchN As Long, inptSubMatchN As Long) As String
+'RET xxx|xxx|xxx AS String IN PRJ FOLDER
+'EX:
+' CONST
+' FNC/SUB
+' ATTR Attribute VB_Name = "Sheet10"
+
+Dim vFile As Variant
+Dim sFolder As String: sFolder = fKey2Val("PRG_SHT_SETUP", "PRJ_SRC_PATH")
+Dim sPtn As String: sPtn = inptPtn
+Dim lMatchNum As Long: lMatchNum = inptMatchN
+Dim lSubMatchnum As Long: lSubMatchnum = inptSubMatchN
+Dim sMatchKey As String: sMatchKey = inptPtn
+Dim sLine As String
+
+Dim sResult As String
+'Dim sthOut As Worksheet: Set shtout = SelectOrCreateWs("FncList")
+
+'If sMatchKey = "NotMatch" Or sMatchKey = "" Then printLog ("DownloadMatchList Key2Ver Error")
+
+'MAKE FUNCTION NAME LIST
+For Each vFile In fGetFilePathInFolder(sFolder) 'Folder path("C:\ANY") : string  =>  File list : object
+
+    With CreateObject("Scripting.FileSystemObject").OpenTextFile(CStr(vFile))
+            
+            Do While .AtEndOfStream <> True
+            
+                sLine = CStr(.readline)
+
+                If fRegxTest(sLine, sPtn) Then
+                    sLine = fRegxMatch(sLine, sPtn, lMatchNum, lSubMatchnum)
+                    
+                    sLine = fReplace(sLine, "_", "\_")
+                    sLine = fReplace(sLine, "(", "\(")
+                    sLine = fReplace(sLine, ")", "\)")
+                    sLine = fReplace(sLine, ".", "\.")
+                    
+                    sResult = WorksheetFunction.TextJoin("|", True, sResult, sLine)
+                
+                End If
+            Loop 'read sLine
+    .Close
+    End With 'open file
+Next vFile
+
+'!YET if duplicate function name
+fPrgCreateRegxPtn = sResult
+
+End Function
+
+
+
+
+Sub ooo_WROKSHT_FNC_oooo()
+End Sub
+
+
+Sub WriteValueOnSht(inptSht As String, inptKey As String, inptVal As String)
+
+Dim rCell As Range
+
+If IsExistWs(inptSht) = False Then printLog ("not exist worksheet name :" & inptSht): Exit Sub
+
+With ThisWorkbook.Sheets(inptSht)
+
+    With .Cells(Rows.Count, 1).End(xlUp)
+
+        .Offset(1, 0).Value = inptKey
+        .Offset(1, 1).Value = inptVal
+
+    End With
+
+End With
+
+End Sub
+
+
+Sub ooo_WS_CHIP_oooo()
+End Sub
+
 Sub keybind()
 
 Application.OnKey "+^%s", "showHiddenRow"
@@ -92,6 +438,13 @@ End Select
 End Sub
 
 
+Function fWs_Get_FName(inptStr As String) As String
+
+fWs_Get_FName = fRegxMatchs(inptStr, "\s([\d\w_]+\.(dat|bas|frm|cls))")(0).submatches(0)
+
+End Function
+
+
 Sub SetUpWorkBook()
 
 Dim ws As Worksheet
@@ -115,7 +468,7 @@ End Sub
 
 
 
-Function fGetParam(inptSht As String, inptRng As String, inptDsc As String, Optional inptCmt As String = "") As String
+Function fGetRngPrm(inptSht As String, inptRng As String, inptDsc As String, Optional inptCmt As String = "") As String
 ' fGetParam("SHT","A","DESC","RG_XXX")
 
 Dim sResult As String
@@ -138,7 +491,7 @@ If inptCmt <> "" Then
 
 End If
 
-fGetParam = sResult
+fGetCellPrm = sResult
 
 End Function
 
@@ -234,6 +587,8 @@ Dim rCell As Range
 
 End Sub
 
+Sub ooo_FILE_IO_oooo()
+End Sub
 
 
 
@@ -245,403 +600,6 @@ End With
 
 End Function
 
-
-
-Sub DownloadFncCall()
-Dim vFile As Variant
-Dim sFolder As String: sFolder = fKey2Val("LS_BC", "PRG_GET_FOLDER")
-If fKey2Val("LS_BC", "PRG_DBG", "NOT") = "NOT" Then Stop 'RW/PC
-
-' YET
-'If fKey2Val("LS_BC", "PRG_GET_FNCCALL", "") = "" Then Stop '(Sub|Function)\s?([\_\d\w]+)\(
-'Dim sMatchKey As String: sMatchKey = fKey2Val("LS_BC", "PRG_GET_FNCCALL", inptErrMsg:="NotMatch")
-Dim sLine As String
-Dim lRow As Long: lRow = 1
-Dim lCnt As Long: lCnt = 1 'total line count
-Dim lIndex As Long 'temp index
-Dim sResult As String
-Dim sPtnFnc As String: sPtnFnc = "(Sub|Function)\s?([\_\d\w]+)\("
-Dim sPtnCall As String: sPtnCall = fReplace(fPGGetRgxMatchs(sPtnFnc), _
-                                    "_", _
-                                    "\_")
-                                    
-'Dim sthOut As Worksheet: Set shtout = SelectOrCreateWs("FNC_LIST")
-
-'If sMatchKey = "NotMatch" Or sMatchKey = "" Then printLog ("DownloadMatchList Key2Ver Error")
-
-'MAKE FUNCTION NAME LIST
-For Each vFile In fGetFilePathInFolder(sFolder) 'Folder path("C:\ANY") : string  =>  File list : object
-
-    With CreateObject("Scripting.FileSystemObject").OpenTextFile(CStr(vFile))
-            
-     Do While .AtEndOfStream <> True
-                
-                sLine = CStr(.readline)
-                
-                'Join split lines
-                If Right(sLine, 2) = " _" Then
-                 'splited
-                 
-                     lIndex = lCnt
-                     slineTmp = sLine
-                    
-                    Do
-                        sLine = CStr(.readline)
-                        slineTmp = slineTmp & sLine
-                         lCnt = lCnt + 1
-                    Loop While Right(sLine, 2) = " _"
-                    
-                    sLine = slineTmp
-                    sLine = fReplaceRegx(sLine, "\(?\s_[\s\r]+\)?", " ", True) & vbLf  'replace "_ \n" to " "
-                    slineTmp = ""
-                      
-               Else
-               'not
-               
-                    lIndex = lCnt
-                    sLine = sLine
-                  
-                End If
-                
-            
-                ' >> regx match
-                
-                'out put line
-                With SelectOrCreateWs("FNC_LIST")
-
-'
-'                'RegxPatterns
-'                If fRegxTest(sLine, sMatchPtn) _
-'                    And Not fRegxTest(sLine, sMutePtn) _
-'                Then
-'
-                
-                        If fRegxFirstMatch(sLine, sPtnFnc) <> "#VALUE!" Or _
-                           fRegxFirstMatch(sLine, sPtnCall) <> "#VALUE!" _
-                        Then
-                        
-                
-                       'Output line , RegxPatterns1,2
-                        
-                        Dim tmpCol As Integer: tmpCol = 1
-                        .Cells(lRow, tmpCol + 0).Value = lIndex
-                        .Cells(lRow, tmpCol + 1).Value = sLine
-                        .Cells(lRow, tmpCol + 2).Value = Dir(CStr(vFile))
-                        .Cells(lRow, tmpCol + 3).Value = fKey2Val("GET_FILETYPE", Dir(CStr(vFile)))
-                        .Cells(lRow, tmpCol + 4).Value = Dir(CStr(vFile)) & "-" & lCnt  'Uniq Key
-                    
-                    
-                        'Set fnc
-
-                            tStack.crrFncName = fRegxFirstMatch(sLine, fKey2Val("LS_BC", "RGX_FNCNAME"), 1)
-                            tStack.outPutRow = lRow
-                            tStack.sqlCnt = 0 'clng(tStack.sqlCnt) + 1
-                            
-                            .Cells(lRow, fCol("A")).Value = tStack.crrFncName & tStack.outPutRow & tStack.sqlCnt
-                        
-                        
-                        
-                        'next row
-                        lRow = lRow + 1
-                           
-                        
-                        End If
-                        
-   
-'
-'                End If
-'
-                'next line
-                lCnt = lCnt + 1
-                    
-                    
-'               'REGX IN sLine
-'
-'                Debug.Print sLine
-'                If fRegxTest(sLine, sMatchPtn) Then Debug.Print "true"
-
-            End With 'Sheet
-
-            Loop 'PER sLine
-                
-     .Close
-    End With 'ReadObj
-
-    
-    'stack=======================
-
-    lCnt = 1
-
-Next vFile
-
-
-'!YET if duplicate function name
-fGetFncCall = sResult
-End Sub
-
-
-
-'!! RET String(xxx|xxx|xxx) IN PRJ FOLDER
-Function fGetRegxWordPtn(inptPtn As String, inptMatchN As Long, inptSubMatchN As Long) As String
-Dim vFile As Variant
-Dim sFolder As String: sFolder = fKey2Val("LS_BC", "PRG_GET_FOLDER")
-
-'If fKey2Val("LS_BC", "PRG_DBG", "NOT") = "NOT" Then Stop 'RW/PC
-'' YET
-'If fKey2Val("LS_BC", "PRG_GET_FNCCALL", "") = "" Then Stop '(Sub|Function)\s?([\_\d\w]+)\(
-
-Dim sPtn As String: sPtn = inptPtn
-Dim lMatchNum As Long: lMatchNum = inptMatchN
-Dim lSubMatchnum As Long: lSubMatchnum = inptSubMatchN
-Dim sMatchKey As String: sMatchKey = inptPtn
-Dim sLine As String
-'Dim lRow As Long: lRow = 1
-'Dim lCnt As Long: lCnt = 1 'total line count
-'Dim lIndex As Long 'temp index
-Dim sResult As String
-'Dim sthOut As Worksheet: Set shtout = SelectOrCreateWs("FncList")
-
-
-'If sMatchKey = "NotMatch" Or sMatchKey = "" Then printLog ("DownloadMatchList Key2Ver Error")
-
-'MAKE FUNCTION NAME LIST
-For Each vFile In fGetFilePathInFolder(sFolder) 'Folder path("C:\ANY") : string  =>  File list : object
-
-    With CreateObject("Scripting.FileSystemObject").OpenTextFile(CStr(vFile))
-            
-            Do While .AtEndOfStream <> True
-            
-                sLine = CStr(.readline)
-
-                If fRegxTest(sLine, sPtn) Then
-                    sLine = fRegxMatch(sLine, sPtn, lMatchNum, lSubMatchnum)
-                    sResult = WorksheetFunction.TextJoin("|", True, sResult, sLine)
-                
-                End If
-            Loop 'read sLine
-    .Close
-    End With 'open file
-Next vFile
-
-'!YET if duplicate function name
-fGetRegxWordList = sResult
-
-End Function
-
-
-
-'Sub DownloadObjectFileList()
-'Dim vFile As Variant
-'Dim sFolder As String: sFolder = fKey2Val("LS_BC", "PRG_GET_FOLDER")
-'Dim sLine As String
-'Dim sResult As String
-'
-'With SelectOrCreateWs("OBJ_LIST")
-'    .Cells.Clear
-'End With
-'
-'
-''MAKE FUNCTION NAME LIST
-'For Each vFile In fGetFilePathInFolder(sFolder) 'Folder path("C:\ANY") : string  =>  File list : object
-'
-'        With SelectOrCreateWs("OBJ_LIST")
-'            .Cells(Cells(Rows.Count, 1).End(xlUp).row + 1, 1).Value = Dir(CStr(vFile))
-'        End With
-'
-'Next vFile
-'
-'End Sub
-
-
-
-Sub DownloadCode()
-Dim vFile As Variant
-Dim sFolder As String: sFolder = fKey2Val("LS_BC", "PRG_GET_FOLDER")
-Dim sText As String
-Dim lCnt As Long: lCnt = 1 'total line count
-Dim lIndex As Long 'temp index
-Dim lRow As Long: lRow = 2 'workshetsheet row
-Dim oMatchs As Object
-Dim oMatch As Object
-Dim oArr As Object: Set oArr = CreateObject("System.Collections.ArrayList")
-Dim sLine As String
-Dim slineTmp As String
-Dim sMatchPtn As String
-Dim sMutePtn As String:
-Dim sthOBJDTL As Worksheet
-Dim sFncNames As String
-Dim tStack As tStack
-
-
-' >> Get Regx Pattern
-'sMatchPtn = CStr(fKey2Val("LS_BC", "PRG_GET_MATCHPTN")) >> marking only
-'Set shtOBJDTL = SelectOrCreateWs("DOWNLOAD") ' >> each Sheet
-shtOBJDTL.Cells.Clear
-
-
-'RegxPattern Mute
-'sMutePtn = CStr(fKey2Val("LS_BC", "PRG_GET_MUTEPTN")): If sMutePtn = "" Then sMutePtn = "====================DMY_PTN======================"
-'RegxPattern (Sub|Func|Property) List                'YET \\_ <- ??
-sFncNames = fReplace(fCreatePrjFncList(sFolder), _
-                                    "_", _
-                                    "\_")
-                                    
-                                    
-                                    HERE
-
-' >> OUTPUT ON SHEET
-
-For Each vFile In fGetFilePathInFolder(sFolder) 'Folder path("C:\ANY") : string  =>  File list : object
-
-    With CreateObject("Scripting.FileSystemObject").OpenTextFile(CStr(vFile))
-            
-            Do While .AtEndOfStream <> True
-                       
-                       
-                ' >> make lIndex sline, replace splited
-                
-                sLine = CStr(.readline)
-                
-                'Join split lines
-                If Right(sLine, 2) = " _" Then
-                 'splited
-                 
-                     lIndex = lCnt
-                     slineTmp = sLine
-                    
-                    Do
-                        sLine = CStr(.readline)
-                        slineTmp = slineTmp & sLine
-                         lCnt = lCnt + 1
-                    Loop While Right(sLine, 2) = " _"
-                    
-                    sLine = slineTmp
-                    sLine = fReplaceRegx(sLine, fKey2Val("LS_BC", "RGX_VBATRIMN"), " ", True) & vbLf  'replace _ \n
-                    slineTmp = ""
-                      
-               Else
-               'not
-               
-                    lIndex = lCnt
-                    sLine = sLine
-                  
-                End If
-                
-            
-                ' >> regx match
-                
-                'out put line
-                With shtOBJDTL
-                    
-                    
-                    
-                    
-                    
-
-               DOWNLOAD ALL TEXT, NO CHECK
-
-                 MARKING
-                  case FNC => If fregxtext(sLine, "(Sub|Function)\s?([\_\d\w]+)\(") Then
-                
-                If fRegxTest(sLine, sMatchPtn) _
-                    And Not fRegxTest(sLine, sMutePtn) _
-                    Or fRegxTest(sLine, sFncNames) _
-                Then
-                    
-                        'Set fnc
-                        If fRegxFirstMatch(sLine, fKey2Val("LS_BC", "RGX_FNCNAME")) <> "#VALUE!" Then
-                            tStack.crrFncName = fRegxFirstMatch(sLine, fKey2Val("LS_BC", "RGX_FNCNAME"), 1)
-                            tStack.outPutRow = lRow
-                            tStack.sqlCnt = 0 'clng(tStack.sqlCnt) + 1
-                            
-                            .Cells(lRow, fCol("A")).Value = tStack.crrFncName & tStack.outPutRow & tStack.sqlCnt
-                        
-                        End If
-                        
-                        
-                        'SQL Execute
-                        'YET K2V
-                        If fRegxFirstMatch(sLine, "\.Execute") <> "#VALUE!" _
-                               Or _
-                           fRegxFirstMatch(sLine, "\.Open") <> "#VALUE!" _
-                        Then
-                            .Cells(lRow, fCol("B")).Value = sLine
-                        End If
-                                                
-                        
-                        'Output line , RegxPatterns1,2
-                        
-                        Dim tmpCol As Integer: tmpCol = 3
-                        .Cells(lRow, tmpCol + 0).Value = lIndex
-                        .Cells(lRow, tmpCol + 1).Value = sLine
-                        .Cells(lRow, tmpCol + 2).Value = Dir(CStr(vFile))
-                        .Cells(lRow, tmpCol + 3).Value = fKey2Val("GET_FILETYPE", Dir(CStr(vFile)))
-                        .Cells(lRow, tmpCol + 4).Value = Dir(CStr(vFile)) & "-" & lCnt  'Uniq Key
-                    
-                        '>>
-                        
-                        
-                        
-                        
-                        
-                        '<<
-                        
-                    
-                    'next row
-                    lRow = lRow + 1
-                
-                End If
-            
-                'next line
-                lCnt = lCnt + 1
-                    
-                    
-'               'REGX IN sLine
-'
-'                Debug.Print sLine
-'                If fRegxTest(sLine, sMatchPtn) Then Debug.Print "true"
-
-            End With 'Sheet
-
-            Loop 'PER sLine
-                
-     .Close
-    End With 'ReadObj
-
-    
-    'stack=======================
-
-    lCnt = 1
-
-Next vFile
-
-
-'
-''Function fRegxMatchs(ByVal inptStr As String, ByVal inptPattern As String, Optional inptGlobal As Boolean = False) As Object
-'Set oMatchs = fRegxMatchs(sText, sMatchPtn)
-'
-'If oMatchs Is Nothing Then Debug.Print "REGX NOT MATCH": Exit Sub
-'
-'For Each oMatch In oMatchs
-'
-'    With oMatch
-'        'Regx
-'        'Function fRegxTest(ByVal inptStr As String, ByVal inptPattern As String) As Boolean
-'
-'
-''       If Not fRegxTest(.Value, sMutePtn) Then
-''
-''        End If
-'
-'        'clean up
-'        'Debug.Print ReplaceRegx(.Value, "\(?\s_[\s\r]+\)?", " ", True)f
-'
-'    End With
-'CONTINUE:
-'Next oMatch
-
-
-End Sub
 
 
 '==================================================================================================
@@ -778,7 +736,9 @@ End Function
 
 
 
-Function fRegxTest(ByVal inptStr As String, ByVal inptPattern As String) As Boolean
+Function fRegxTest(ByVal inptStr As String, ByVal inptPattern As String, Optional inptRestrict As String = False) As Boolean
+
+Dim sResult As Boolean
 
     With CreateObject("VBScript.RegExp")
         
@@ -788,12 +748,26 @@ Function fRegxTest(ByVal inptStr As String, ByVal inptPattern As String) As Bool
         .Pattern = inptPattern
     
         If .test(inptStr) Then
-            fRegxTest = True
+            
+            If inptRestrict <> False Then
+            
+                sResult = Len(fRegxMatchs(inptStr, inptPattern)(0)) = Len(inptStr)
+            
+            Else
+                
+                sResult = True
+        
+            End If
+        
         Else
-            fRegxTest = False
+        
+                sResult = False
+        
         End If
     
     End With
+    
+fRegxTest = sResult
     
 End Function
 
@@ -855,6 +829,26 @@ End Sub
 
 
 
+Function IsExistWs(inptShtName As String, Optional inptWb As String = "") As Boolean
+Dim sSht As String: sSht = inptShtName
+Dim sWb As Workbook: If inptWb = "" Then Set sWb = ThisWorkbook Else Set sWb = Workbooks(inptWb)
+Dim s As Worksheet
+Dim sResult As Boolean
+
+sResult = False
+
+For Each s In sWb.Sheets
+    If s.Name = sSht Then
+        sResult = True
+    End If
+Next s
+    
+
+IsExistWs = sResult
+
+End Function
+
+
 Function SelectOrCreateWs(inptShtName As String, Optional inptWb As String = "") As Worksheet
 Dim sSht As String: sSht = inptShtName
 Dim sWb As Workbook: If inptWb = "" Then Set sWb = ThisWorkbook Else Set sWb = Workbooks(inptWb)
@@ -887,6 +881,9 @@ End Function
 
 
 
+Sub ooo_REGX_MATCH_ooo()
+
+End Sub
 
 '==================================================================================================
 
@@ -904,20 +901,26 @@ Function fRegxMatch(ByVal inptStr As String, _
 'Print fRegxMatch("ABCDE1234", "XYZ", inptErrMsg:="Oooops!")
 'Oooops!
 
+Dim sResult As String
+
+
 If fRegxMatchs(inptStr, inptPattern) Is Nothing Or _
     fRegxMatchs(inptStr, inptPattern).Count <= inptIndex Then
 
-    fRegxMatch = inptErrMsg
-
-ElseIf inptSubIndex <> 999999999 Then
-    
-    fRegxMatch = fRegxMatchs(inptStr, inptPattern)(inptIndex).submatches(CLng(inptSubIndex))
-    
+        sResult = inptErrMsg
 Else
     
-    fRegxMatch = fRegxMatchs(inptStr, inptPattern)(inptIndex)
+    sResult = fRegxMatchs(inptStr, inptPattern)(inptIndex)
 
+    If inptSubIndex <> 999999999 And _
+        fRegxMatchs(inptStr, inptPattern)(inptIndex).submatches.Count - 1 >= inptSubIndex Then
+    
+        sResult = fRegxMatchs(inptStr, inptPattern)(inptIndex).submatches(CLng(inptSubIndex))
+    End If
+    
 End If
+
+fRegxMatch = sResult
 
 End Function
 
