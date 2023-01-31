@@ -25,6 +25,67 @@ End Type
 Sub ■()
 End Sub
 
+Sub PickLabel()
+Dim i As Long
+Dim wsDST As Worksheet: Set wsDST = SelectOrCreateWs("INDEX")
+Dim wsFRM As Worksheet: Set wsFRM = ThisWorkbook.Worksheets("DOWNLOAD")
+Dim dstRow As Long
+Dim sSp As String
+wsDST.Cells.Clear
+dstRow = 2
+
+'YYYYMMDD(nnn, nn), M, E, 【SQLnnn】, FNC( _ ..., CMT
+Dim lFRM_FILE As Long: lFRM_FILE = fCol("A")
+Dim lFRM_MARK As Long: lFRM_MARK = fCol("B")
+Dim lFRM_ST As Long: lFRM_ST = fCol("C")
+Dim lFRM_LABEL As Long: lFRM_LABEL = fCol("D")
+Dim lFRM_LINE As Long: lFRM_LINE = fCol("E")
+Dim lFRM_CMT As Long: lFRM_CMT = fCol("F")
+
+'【XXXnnn】,E , FNC( _ ... , CMT
+Dim lDst_LABEL As Long: lDst_LABEL = fCol("A")
+Dim lDst_ST As Long: lDst_ST = fCol("B")
+Dim lDst_LINE As Long: lDst_LINE = fCol("C")
+Dim lDst_CMT As Long: lDst_CMT = fCol("D")
+
+
+With wsFRM
+
+    For i = .Cells(Rows.Count, lFRM_FILE).End(xlUp).Row To 2 Step -1
+    
+     If Left(UCase(Trim(.Cells(i, lFRM_LABEL).Value)), 4) = "【FNC" Or _
+        Left(UCase(Trim(.Cells(i, lFRM_LABEL).Value)), 4) = "【SQL" Or _
+        Left(UCase(Trim(.Cells(i, lFRM_LABEL).Value)), 1) = "【" _
+        Then
+            
+    
+     Select Case Left(UCase(Trim(.Cells(i, lFRM_LABEL).Value)), 4)
+        Case "【FNC"
+             wsDST.Cells(dstRow, lDst_LABEL).Value = Trim(.Cells(i, lFRM_LABEL))
+     
+        Case "【SQL"
+            wsDST.Cells(dstRow, lDst_LABEL).Value = "--" & Trim(.Cells(i, lFRM_LABEL))
+
+        Case "【"
+            wsDST.Cells(dstRow, lDst_LABEL).Value = "----" & Trim(.Cells(i, lFRM_LABEL))
+
+     End Select
+     
+     wsDST.Cells(dstRow, lDst_ST).Value = wsFRM.Cells(i, lFRM_ST)
+     wsDST.Cells(dstRow, lDst_LINE).Value = wsFRM.Cells(i, lFRM_LINE)
+     wsDST.Cells(dstRow, lDst_CMT).Value = wsFRM.Cells(i, lFRM_CMT)
+     dstRow = dstRow + 1
+     
+     End If
+     
+
+    Next i
+    
+End With
+
+End Sub
+
+
 Sub ooo_SETUP_BOOK_oooo()
 End Sub
 
