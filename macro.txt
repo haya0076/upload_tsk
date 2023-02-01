@@ -25,63 +25,121 @@ End Type
 Sub ■()
 End Sub
 
-Sub PickLabel()
+Sub keybind()
+'+ ^ %
+
+Application.OnKey "+^%h", "showHiddenRow"
+Application.OnKey "+^h", "HideRoW_ast"
+
+'Application.OnKey "+^%h", "showHiddenRow"
+'Application.OnKey "+^h", "HideRoW"
+
+'HideCol
+'showHiddenCol
+
+End Sub
+
+
+Sub PickLabel_Full(inptFileCol As Long, inptLabelCol As Long)
 Dim i As Long
-Dim wsDST As Worksheet: Set wsDST = SelectOrCreateWs("INDEX")
-Dim wsFRM As Worksheet: Set wsFRM = ThisWorkbook.Worksheets("DOWNLOAD")
-Dim dstRow As Long
+Dim ii As Long
+Dim wsDst As Worksheet: Set wsDst = SelectOrCreateWs("INDEX")
+Dim wsFrm As Worksheet: Set wsFrm = ThisWorkbook.Worksheets("DOWNLOAD")
+Dim ldstRow As Long: ldstRow = 2
 Dim sSp As String
-wsDST.Cells.Clear
-dstRow = 2
+Dim sPtn As String
+Dim lFRM_FILE As Long: lFRM_FILE = inptFileCol
+Dim lFRM_LABEL As Long: lFRM_LABEL = inptLabelCol
 
-'YYYYMMDD(nnn, nn), M, E, 【SQLnnn】, FNC( _ ..., CMT
-Dim lFRM_FILE As Long: lFRM_FILE = fCol("A")
-Dim lFRM_MARK As Long: lFRM_MARK = fCol("B")
-Dim lFRM_ST As Long: lFRM_ST = fCol("C")
-Dim lFRM_LABEL As Long: lFRM_LABEL = fCol("D")
-Dim lFRM_LINE As Long: lFRM_LINE = fCol("E")
-Dim lFRM_CMT As Long: lFRM_CMT = fCol("F")
+With wsDst
+    If .Range("A1").Value = "OFF" Then Exit Sub
+    .Range(.Cells(2, 1), .Cells(.Rows.Count, .Columns.Count)).Clear
+End With
 
-'【XXXnnn】,E , FNC( _ ... , CMT
-Dim lDst_LABEL As Long: lDst_LABEL = fCol("A")
-Dim lDst_ST As Long: lDst_ST = fCol("B")
-Dim lDst_LINE As Long: lDst_LINE = fCol("C")
-Dim lDst_CMT As Long: lDst_CMT = fCol("D")
+With wsFrm
 
-
-With wsFRM
-
-    For i = .Cells(Rows.Count, lFRM_FILE).End(xlUp).Row To 2 Step -1
+    For i = 2 To .Cells(Rows.Count, lFRM_FILE).End(xlUp).Row
     
-     If Left(UCase(Trim(.Cells(i, lFRM_LABEL).Value)), 4) = "【FNC" Or _
-        Left(UCase(Trim(.Cells(i, lFRM_LABEL).Value)), 4) = "【SQL" Or _
-        Left(UCase(Trim(.Cells(i, lFRM_LABEL).Value)), 1) = "【" _
+     If .Cells(i, lFRM_LABEL).Value <> "" And _
+         Left(Trim(.Cells(i, lFRM_LABEL)), 1) = "【" Or _
+         .Cells(i, lFRM_LABEL).Value = "*" _
         Then
+
+        Select Case True
+
+            Case Left(Trim(.Cells(i, lFRM_LABEL)), 4) = "【FNC"
+                 sSp = ""
+
+            Case Left(Trim(.Cells(i, lFRM_LABEL)), 4) = "【SQL"
+                sSp = "   "
+
+            Case Left(Trim(.Cells(i, lFRM_LABEL)), 1) = "【"
+                sSp = "      "
+
+            Case Left(Trim(.Cells(i, lFRM_LABEL)), 1) = "*"
+                sSp = "    　    "
+         End Select
+         
+         
+        For ii = 1 To 9
+        
+            If ii = lFRM_LABEL Then
+                wsDst.Cells(ldstRow, ii).Value = sSp & wsFrm.Cells(i, ii)
+            Else
+                wsDst.Cells(ldstRow, ii).Value = wsFrm.Cells(i, ii)
+            End If
             
-    
-     Select Case Left(UCase(Trim(.Cells(i, lFRM_LABEL).Value)), 4)
-        Case "【FNC"
-             wsDST.Cells(dstRow, lDst_LABEL).Value = Trim(.Cells(i, lFRM_LABEL))
-     
-        Case "【SQL"
-            wsDST.Cells(dstRow, lDst_LABEL).Value = "--" & Trim(.Cells(i, lFRM_LABEL))
-
-        Case "【"
-            wsDST.Cells(dstRow, lDst_LABEL).Value = "----" & Trim(.Cells(i, lFRM_LABEL))
-
-     End Select
-     
-     wsDST.Cells(dstRow, lDst_ST).Value = wsFRM.Cells(i, lFRM_ST)
-     wsDST.Cells(dstRow, lDst_LINE).Value = wsFRM.Cells(i, lFRM_LINE)
-     wsDST.Cells(dstRow, lDst_CMT).Value = wsFRM.Cells(i, lFRM_CMT)
-     dstRow = dstRow + 1
-     
-     End If
-     
+        Next ii
+         
+        ldstRow = ldstRow + 1
+        
+        End If
 
     Next i
     
 End With
+
+ 
+End Sub
+
+
+
+
+Sub PickLabel()
+Dim lFRM_FILE As Long: lFRM_FILE = fCol("A")
+Dim lFRM_LABEL As Long: lFRM_LABEL = fCol("D")
+
+Dim lDST_LABEL As Long: lDST_LABEL = fCol("D")
+Dim rCell As Range
+Dim sPtn As String
+sPtn = "【SQL"
+
+'Application.ScreenUpdating = False
+
+Call PickLabel_Full(lFRM_FILE, lFRM_LABEL)
+
+    With ThisWorkbook.Sheets("index")
+
+        .Range(.Cells(2, lDST_LABEL), .Cells(.Cells(Rows.Count, lDST_LABEL).End(xlUp).Row, lDST_LABEL)).Select
+
+        For Each rCell In Selection
+            
+            If rCell.Value <> "" Then
+                If fRegxTest(Trim(rCell.Value), sPtn) = True Then
+                    rCell.EntireRow.Hidden = False
+                Else
+                    rCell.EntireRow.Hidden = True
+                    
+                End If
+            End If
+            
+        Next rCell
+
+
+
+    End With
+
+Application.ScreenUpdating = True
 
 End Sub
 
@@ -111,16 +169,16 @@ For Each ws In ThisWorkbook.Sheets
 
 Next ws
 
-With SelectOrCreateWs("PRG_PRM")
-'pg use only
-    .Visible = False
-End With
-
-With SelectOrCreateWs("LinkSht")
-'pg use only
-    .Visible = False
-End With
-
+'With SelectOrCreateWs("PRG_PRM")
+''pg use only
+'    .Visible = False
+'End With
+'
+'With SelectOrCreateWs("LinkSht")
+''pg use only
+'    .Visible = False
+'End With
+'
 
 
 sWs = "USER_PRM"
@@ -177,9 +235,6 @@ Application.DisplayAlerts = True
 End Sub
 
 
-Sub ■■()
-
-End Sub
 
 
 Function fPrgRet1(inptStr As String, inptCase As String) As String
@@ -335,13 +390,6 @@ End Sub
 
 
 
-Sub SETUP_SHT_SVR()
-
-
-fPrgCreateRegxPtn
-
-
-End Sub
 
 
 
@@ -429,12 +477,7 @@ End Sub
 Sub ooo_WS_CHIP_oooo()
 End Sub
 
-Sub keybind()
 
-Application.OnKey "+^%s", "showHiddenRow"
-Application.OnKey "+^%h", "HideRoW"
-
-End Sub
 
 
 Sub HighlightWord(Optional inptColor As String = "red", Optional inptPtn As String = "PRG_MARK_PTN")
@@ -565,6 +608,9 @@ Debug.Print String(1000, vbLf)
 End Sub
 
 
+Sub HideRoW_ast()
+    HideRoW ("*")
+End Sub
 
 Sub HideRoW(Optional inptMark As String = "")
 
@@ -594,7 +640,30 @@ Next rCell
 End Sub
 
 
-Sub showRow()
+Sub HideRow_Regx(inptPtn As String)
+
+Dim rCell As Range
+Dim sPtn As String: sPtn = inptPtn
+
+
+For Each rCell In Selection
+
+    If rCell.Value <> "" Then
+        
+        If fRegxTest(rCell.Value, sPtn) = False Then
+            
+            rCell.EntireRow.Hidden = True
+        
+        End If
+    
+    End If
+    
+Next rCell
+
+
+End Sub
+
+Sub showHiddenRow()
 
 Dim rCell As Range
 
@@ -605,6 +674,7 @@ Dim rCell As Range
     Next rCell
 
 End Sub
+
 
 
 
@@ -636,7 +706,7 @@ Next rCell
 End Sub
 
 
-Sub showCol()
+Sub showHiddenCol()
 
 Dim rCell As Range
 
