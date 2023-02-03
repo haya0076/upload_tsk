@@ -1552,26 +1552,25 @@ Dim sWbPath As String
 Dim sWbName As String
 Dim sWsName As String
 Dim sWbDBPath As String
-
+Dim sSelect As String
+Dim sFroSht As String
+Dim sWhere As String
+Dim sSql As String
 'sWbDBPath = " 'C:\Users\Owner\Documents\workspace\DFR3_DB_211004.xlsm' 'Excel 12.0 Xml;HDR=YES' "
 
-'Out Setting
 sWbName = ThisWorkbook.Path & "\" & ThisWorkbook.Name
-
-'sWsName = "SQLOUT_" & Format(Now(), "YYYYMMDDhhmmss")
-'Call SelectOrCreateWs(sWsName, ThisWorkbook.Name)
+sSelect = "[FILE],[MARK],[STATUS],[LABEL],[LINE],[C1],[C2],[C3],[C4]"
+sFroSht = "[DOWNLOAD$]"
 
 Application.ScreenUpdating = False
 
 sWsName = "SQLOUT"
+'sWsName = "SQLOUT_" & Format(Now(), "YYYYMMDDhhmmss")
 With SelectOrCreateWs(sWsName, ThisWorkbook.Name)
     .Cells.Clear
 End With
 
-Dim sSql As String
-
 'Dim sHeader1 As String: sHeader1 = "[DEVICE],[COMMENT],[CATEGORY],[FULL_ADR]"
-
 'sTable1 = _
 '" (SELECT " & _
 '"    [MAIN].[COL1] , [MAIN].[COL2], [OUTER].[COL3] " & _
@@ -1589,34 +1588,25 @@ Dim sSql As String
 '""
 
 'ALL
-sSql = _
-    " SELECT " & _
-        "[FILE],[MARK],[STATUS],[LABEL],[LINE],[C1],[C2],[C3],[C4]" & _
-    " FROM " & _
-        "[DOWNLOAD$]" & _
-    " WHERE " & _
-        "LEFT([LABEL], 1) = '【'"
+'sWhere = "LEFT([LABEL], 1) = '【'"
 
 'FNC/SQL
-'sSql = _
-    " SELECT " & _
-        "[FILE],[MARK],[STATUS],[LABEL],[LINE],[C1],[C2],[C3],[C4]" & _
-    " FROM " & _
-        "[DOWNLOAD$]" & _
-    " WHERE " & _
-        "LEFT([LABEL], 4) = '【FNC'" & _
+'sWhere = "LEFT([LABEL], 4) = '【FNC'" & _
     " OR " & _
         "LEFT([LABEL], 4) = '【SQL'"
 
 'NOT
+'sWhere = "LEFT([LABEL], 4) = '【FNC'" & _
+           " OR " & _
+        "LEFT([LABEL], 4) = '【SQL'"
+        
 sSql = _
     " SELECT " & _
-        "[FILE],[MARK],[STATUS],[LABEL],[LINE],[C1],[C2],[C3],[C4]" & _
+        sSelect & _
     " FROM " & _
-        "[DOWNLOAD$]" & _
+        sFroSht & _
     " WHERE " & _
-        "NOT LEFT([LABEL], 4) = '【FNC'"
-        
+        sWhere
 
 sSqlQuery = sSql
 
