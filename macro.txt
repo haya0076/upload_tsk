@@ -22,23 +22,163 @@ Type tIndexedtext
 End Type
 
 
-Sub ■()
+Sub ■ローカル移動■()
 End Sub
 
 
-Sub keybind()
-'+ ^ %
 
-Application.OnKey "+^%h", "showHiddenRow"
-Application.OnKey "+^h", "HideRoW_ast"
+Sub fPg_SetRow()
 
-'Application.OnKey "+^%h", "showHiddenRow"
-'Application.OnKey "+^h", "HideRoW"
+Dim sWsName As String: sFrmWsName = "INDEX"
+Dim sKey As String
+Dim sMatchRow As String
+Dim sRslt As String
+Dim rRow As Range
+On Error Resume Next
 
-'HideCol
-'showHiddenCol
+With ThisWorkbook.Worksheets(sFrmWsName)
+
+: sKey = sheets(Selection.Row
+
+    Set rRow = .Columns(.Columns(sKeyCol).Column)
+        If rRow Is Nothing Then Exit Sub
+        sMatchRow = Application.WorksheetFunction.Match(sKey, rRow, 0)
+        If sMatchRow = "" Then sMatchRow = Application.WorksheetFunction.Match(CLng(sKey), rRow, 0)
+
+        If sMatchRow <> "" Then
+            .Cells(sMatchRow, .Columns(sValCol).Column).Value = inptVal
+        Else
+            fSetVal = False: Exit Sub
+        End If
+
+    fSetVal = True
+End With
 
 End Sub
+
+
+
+Sub createSQLnnnSheet()
+
+Dim rCopy As Range: Set rCopy = ThisWorkbook.Sheets("COPY_FROM").Range("A1:B5")
+Dim wb As Workbook: Set wb = Workbooks("MACRO_221002.xlsm")
+Dim i As Long
+
+For i = 1 To 2
+
+    wb.Sheets(Sheets.Count).Activate
+    
+    With wb.Sheets.Add(After:=ActiveSheet)
+        
+        rCopy.Copy
+        .Paste
+        .Name = "NEW_FILE_" & Format(i, "000")
+        Range("A1").Select
+        ActiveCell.FormulaR1C1 = "AAA" & Format(i, "000")
+    
+    End With
+
+Next i
+
+End Sub
+
+
+'!!TRY
+Sub createCmpSQLnnnSheet()
+
+Dim rCopy As Range: Set rCopy = ThisWorkbook.Sheets("COPY_FROM").Range("A1:B5")
+Dim wb As Workbook: Set wb = Workbooks("MACRO_221002.xlsm")
+Dim i As Long
+
+
+For i = 1 To 2
+
+    wb.Sheets(Sheets.Count).Activate
+    
+    With wb.Sheets.Add(After:=ActiveSheet)
+        
+        rCopy.Copy
+        .Paste
+        .Name = "SQL" & Format(i, "000")
+        .Range("A1").Select
+        ActiveCell.FormulaR1C1 = "SQL" & Format(i, "000")
+    
+    End With
+
+Next i
+
+End Sub
+
+
+
+Sub MakeBorder(inptRng As Range)
+' makeborder(activesheet.range("A7"))
+
+    With inptRng.Borders
+        .LineStyle = xlContinuous
+        .ColorIndex = 0
+        .TintAndShade = 0
+        .Weight = xlMedium
+    End With
+        
+    
+End Sub
+
+
+
+Sub FillColor(inptRng As Range)
+' FillColor(activesheet.range("A7"))
+
+    With inptRng.Interior
+        .Pattern = xlSolid
+        .PatternColorIndex = xlAutomatic
+        .ThemeColor = xlThemeColorAccent1
+        .TintAndShade = 0.599993896298105
+        .PatternTintAndShade = 0
+    End With
+    
+End Sub
+
+
+
+    
+Function fGet_BaanTn(inptStr As String) As String
+
+Dim sPtn As String
+sPtn = fKey2Val("PRG_SHT_MCRTST", "RGX_BAAN_TN")
+'[ADD LIKNK SHT] => PRG_SHT_MCRTST,macrobook_tsk_230120.xlsm,MCR_TEST,A,B
+
+fGet_BaanTn = fRegxMatch(inptStr, sPtn)
+
+End Function
+
+
+
+Sub createSht()
+
+Dim i As Long
+Dim lCnt As Long
+Dim ws As Worksheet
+
+For i = 1 To 2
+
+    With ThisWorkbook.Sheets.Add(After:=Sheets(Sheets.Count))
+        ThisWorkbook.Sheets("COPY_FROM").Copy
+        .PasteSpecial
+        .Name = "NEW_SHEET_" & Format(i, "000")
+
+    End With
+    
+Next i
+
+End Sub
+
+
+
+Sub CreateNewWindow()
+    ActiveWindow.NewWindow
+End Sub
+
 
 
 Sub PickLabel_Full(inptFileCol As Long, inptLabelCol As Long)
@@ -1022,20 +1162,22 @@ Function fRegxMatch(ByVal inptStr As String, _
 
 Dim sResult As String
 
-
-If fRegxMatchs(inptStr, inptPattern) Is Nothing Or _
-    fRegxMatchs(inptStr, inptPattern).Count <= inptIndex Then
-
-        sResult = inptErrMsg
-Else
+If fRegxMatchs(inptStr, inptPattern) Is Nothing Then
     
-    sResult = fRegxMatchs(inptStr, inptPattern)(inptIndex)
+    sResult = inptErrMsg
 
-    If inptSubIndex <> 999999999 And _
+ElseIf fRegxMatchs(inptStr, inptPattern).Count - 1 < inptIndex Then
+    
+    sResult = inptErrMsg
+
+ElseIf inptSubIndex <> 999999999 And _
         fRegxMatchs(inptStr, inptPattern)(inptIndex).submatches.Count - 1 >= inptSubIndex Then
     
         sResult = fRegxMatchs(inptStr, inptPattern)(inptIndex).submatches(CLng(inptSubIndex))
-    End If
+    
+Else
+
+    sResult = fRegxMatchs(inptStr, inptPattern)(inptIndex)
     
 End If
 
@@ -1044,16 +1186,20 @@ fRegxMatch = sResult
 End Function
 
 
-
+'NOT FOR WORK SHEET
 Function fRegxMatchs(ByVal inptStr As String, _
                                   ByVal inptPattern As String, _
                                   Optional ByVal inptG As String = True, _
                                   Optional ByVal inptM As String = True, _
                                   Optional ByVal inptI As String = True) As Object
-'oMatch(0...).Value
+'[USAGE]
+'Print fRegxMatchs("xxxtttisi150", "\w{6}\d{3}")(0)
+'tttisi150
+'Print fRegxMatchs("xxxtttisi150", "\w{6}\d{3}")(0).Value
+'tttisi150
+
 'Optinal Global -> If True, then all the matches of the pattern in the string are found.
 '                           If False then only the first match is found.
-
 Dim regx As Object: Set regx = CreateObject("vbscript.regexp")
 Dim oMatchs As Object
 
@@ -1086,12 +1232,12 @@ Function fReplace(ByVal inptStr As String, ByVal inptSearch As String, ByVal inp
 End Function
 
 
-Function fReplaceRegx(ByVal inptStr As String, ByVal inptPattern As String, ByVal inptReplace As String, Optional inptGlobal As Boolean = False) As String
+Function fReplaceRegx(ByVal inptStr As String, ByVal inptPattern As String, ByVal inptReplace As String) As String
 '(group) => $n~
 
 Dim regx As Object: Set regx = CreateObject("vbscript.regexp")
     With regx
-        .Global = inptGlobal 'isMultiple
+        .Global = False 'isMultiple
         .MultiLine = True
         .ignorecase = True
         .Pattern = inptPattern
@@ -1161,6 +1307,40 @@ sResult = fGetCellData(sWb, sWs, sKey, sKeyCol, sRtnCol, sErrMsg)
 fKey2Val = sResult
 
 End Function
+
+
+
+
+'値の設定""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+'Function fSetVal(inptKeyCol As String, inptKey As String, inptValCol As String, inptVal As String, inptWsName As String)
+'
+'Dim sWsName As String:  sWsName = inptWsName
+'Dim sKeyCol As String: sKeyCol = inptKeyCol
+'Dim sKey As String: sKey = inptKey
+'Dim sValCol As String: sValCol = inptValCol
+'Dim sVal As String: sVal = inptVal
+'Dim sMatchRow As String
+'Dim sRslt As String
+'Dim rRow As Range
+'On Error Resume Next
+'
+'With ThisWorkbook.Worksheets(sWsName)
+'
+'    Set rRow = .Columns(.Columns(sKeyCol).Column)
+'        If rRow Is Nothing Then fSetVal = False:  Exit Function
+'        sMatchRow = Application.WorksheetFunction.Match(sKey, rRow, 0)
+'        If sMatchRow = "" Then sMatchRow = Application.WorksheetFunction.Match(CLng(sKey), rRow, 0)
+'
+'        If sMatchRow <> "" Then
+'            .Cells(sMatchRow, .Columns(sValCol).Column).Value = inptVal
+'        Else
+'            fSetVal = False: Exit Function
+'        End If
+'
+'    fSetVal = True
+'End With
+'
+'End Function
 
 
 '検索キーからセルデータを取得する""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
