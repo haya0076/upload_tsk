@@ -22,68 +22,80 @@ Type tIndexedtext
 End Type
 
 
-Sub ■ローカル移動■()
-End Sub
-
-
 
 Sub fPg_SetRow()
-
-Dim sWsName As String: sFrmWsName = "INDEX"
-Dim sKey As String
+Dim sKey As String '
+Dim i As Long '
+Dim sDstWs As String: sDstWs = "DOWNLOAD"
 Dim sMatchRow As String
 Dim sRslt As String
 Dim rRow As Range
+Dim lFile_Col As Long: lFile_Col = 1
+Dim shtActive As String: shtActive = ActiveSheet.Name
+Dim rSel As Range: Set rSel = Selection
+
 On Error Resume Next
 
-With ThisWorkbook.Worksheets(sFrmWsName)
 
-: sKey = sheets(Selection.Row
+' FOR EACH SELECTION
+For i = Selection(1).Row To Selection(Selection.Count).Row
 
-    Set rRow = .Columns(.Columns(sKeyCol).Column)
+'GET KEY => FILE_COL VAL
+sKey = Cells(i, lFile_Col).Value ' CURRENT FILE NO
+
+'SEARCH KEY ON DOWNLOAD SHEET
+With ThisWorkbook.Sheets(sDstWs)
+    Set rRow = .Columns(.Columns(lFile_Col).Column)
+        ' NOT MATCH
         If rRow Is Nothing Then Exit Sub
+        'SEARCH
         sMatchRow = Application.WorksheetFunction.Match(sKey, rRow, 0)
         If sMatchRow = "" Then sMatchRow = Application.WorksheetFunction.Match(CLng(sKey), rRow, 0)
-
-        If sMatchRow <> "" Then
-            .Cells(sMatchRow, .Columns(sValCol).Column).Value = inptVal
-        Else
-            fSetVal = False: Exit Sub
-        End If
-
-    fSetVal = True
-End With
-
-End Sub
-
-
-
-Sub createSQLnnnSheet()
-
-Dim rCopy As Range: Set rCopy = ThisWorkbook.Sheets("COPY_FROM").Range("A1:B5")
-Dim wb As Workbook: Set wb = Workbooks("MACRO_221002.xlsm")
-Dim i As Long
-
-For i = 1 To 2
-
-    wb.Sheets(Sheets.Count).Activate
-    
-    With wb.Sheets.Add(After:=ActiveSheet)
         
-        rCopy.Copy
-        .Paste
-        .Name = "NEW_FILE_" & Format(i, "000")
-        Range("A1").Select
-        ActiveCell.FormulaR1C1 = "AAA" & Format(i, "000")
+        If sMatchRow <> "" Then
+        'COPY PASTE TO DST WS
+        ThisWorkbook.Sheets(shtActive).Rows(i).Copy ThisWorkbook.Sheets(sDstWs).Rows(sMatchRow)
+       Else
+            Exit Sub
+        End If
     
-    End With
+End With
 
 Next i
 
+rSel(1).Select
+
+
 End Sub
 
 
-'!!TRY
+'
+'Sub createSQLnnnSheet()
+'
+'Dim rCopy As Range: Set rCopy = ThisWorkbook.Sheets("COPY_FROM").Range("A1:B5")
+'Dim wb As Workbook: Set wb = Workbooks("MACRO_221002.xlsm")
+'Dim i As Long
+'
+'For i = 1 To 2
+'
+'    wb.Sheets(Sheets.Count).Activate
+'
+'    With wb.Sheets.Add(After:=ActiveSheet)
+'
+'        rCopy.Copy
+'        .Paste
+'        .Name = "NEW_FILE_" & Format(i, "000")
+'        Range("A1").Select
+'        ActiveCell.FormulaR1C1 = "AAA" & Format(i, "000")
+'
+'    End With
+'
+'Next i
+'
+'End Sub
+
+
+''''''''TRY
 Sub createCmpSQLnnnSheet()
 
 Dim rCopy As Range: Set rCopy = ThisWorkbook.Sheets("COPY_FROM").Range("A1:B5")
@@ -1056,35 +1068,51 @@ End Function
 
 
 Sub printLog(inptStr As String, Optional inptFile As String = "")
-Dim sPath As String
-Dim sStr As String
-sPath = ThisWorkbook.Path & "\" & Switch(inptFile = "", "vbaLog.txt", inptFile <> "", inptFile)
 
+Dim sStr As String
 sStr = CStr(Now()) & " : " & inptStr
 
-With CreateObject("Scripting.FileSystemObject")
-
-    If Dir(sPath) <> "" Then
-    
-'        With .OpenTextFile(sPath, ForAppending)
-'            .Write sStr & vbLf
-'        End With
-
-        Open sPath For Append As #1
-        Print #1, sStr
-        Close #1
-    
-    Else
-    
-        With .CreaTetextFile(sPath)
-            .Write sStr & vbLf
-        End With
-        
-    End If
-
-End With
+    With SelectOrCreateWs("DEBUG")
+        Range("A1").EntireRow.Insert
+        Range("A1").Value = sStr
+    End With
 
 End Sub
+
+
+
+
+''''FILE OUT PUT VCERSION
+'Sub printLog(inptStr As String, Optional inptFile As String = "")
+'Dim sPath As String
+'Dim sStr As String
+'sPath = ThisWorkbook.Path & "\" & Switch(inptFile = "", "vbaLog.txt", inptFile <> "", inptFile)
+'
+'sStr = CStr(Now()) & " : " & inptStr
+'
+'With CreateObject("Scripting.FileSystemObject")
+'
+'    If Dir(sPath) <> "" Then
+'
+''        With .OpenTextFile(sPath, ForAppending)
+''            .Write sStr & vbLf
+''        End With
+'
+'        Open sPath For Append As #1
+'        Print #1, sStr
+'        Close #1
+'
+'    Else
+'
+'        With .CreaTetextFile(sPath)
+'            .Write sStr & vbLf
+'        End With
+'
+'    End If
+'
+'End With
+'
+'End Sub
 
 
 
@@ -1122,16 +1150,14 @@ If sSht = "" Then printLog ("Sheet Name Is Empty"): Exit Function
 
 For Each s In sWb.Sheets
     If s.Name = sSht Then
-        printLog ("Select Sheet " & sSht)
         Set SelectOrCreateWs = sWb.Sheets(sSht)
         Exit Function
     End If
 Next s
 
 With sWb.Worksheets.Add
-    printLog ("Create New Sheet " & sSht)
     .Name = sSht
-        Set sht = sWb.Sheets(sSht)
+    Set sht = sWb.Sheets(sSht)
 End With
 
 Set SelectOrCreateWs = sht
