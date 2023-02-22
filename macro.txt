@@ -23,9 +23,10 @@ End Type
 
 
 
-Sub fPg_SetRow()
+Sub fPg_UpdateRow()
 Dim sKey As String '
 Dim i As Long '
+Dim ii As Long
 Dim sDstWs As String: sDstWs = "DOWNLOAD"
 Dim sMatchRow As String
 Dim sRslt As String
@@ -54,10 +55,14 @@ With ThisWorkbook.Sheets(sDstWs)
         
         If sMatchRow <> "" Then
         'COPY PASTE TO DST WS
-        ThisWorkbook.Sheets(shtActive).Rows(i).Copy ThisWorkbook.Sheets(sDstWs).Rows(sMatchRow)
-       Else
-            Exit Sub
-        End If
+    
+            For ii = 1 To 20
+            
+             If Not (ii = 1 Or ii = 4) Then ThisWorkbook.Sheets(shtActive).Cells(i, ii).Copy ThisWorkbook.Sheets(sDstWs).Cells(sMatchRow, ii)
+                   
+            Next ii
+
+        End If ' If sMatchRow <> "" Then
     
 End With
 
