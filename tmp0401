@@ -324,4 +324,365 @@ End Sub
 
 
 
+'Range("A2").Resize(Rows.Count - 1, 3).Select
+
+
+
+Sub Pg_Fill_MatchValues()
+
+Dim sFrmShtName As String: sFrmShtName = "LBL(DEF)": If isSheetName_TB(sFrmShtName) = False Then Stop
+Dim sDstShtName As String: sDstShtName = "MAIN": If isSheetName_TB(sDstShtName) = False Then Stop
+
+Dim lFrmCol_File As Long: lFrmCol_File = fPg_searchCol_TB("FILE", sFrmShtName): If lFrmCol_File = 0 Then Stop
+Dim lFrmCol_Trg As Long: lFrmCol_Trg = fPg_searchCol_TB("TEST_COL", sFrmShtName): If lFrmCol_Trg = 0 Then Stop
+
+Dim lDstCol_File As Long: lDstCol_File = fPg_searchCol_TB("FILE", sDstShtName): If lDstCol_File = 0 Then Stop
+Dim lDstCol_Trg As Long: lDstCol_Trg = fPg_searchCol_TB("TEST_COL", sDstShtName): If lDstCol_Trg = 0 Then Stop
+
+
+With ThisWorkbook.Sheets(sDstShtName)
+    lRowEd = .Cells(Rows.Count, lFrmCol_File).End(xlUp).Row + 1
+    vValues = ThisWorkbook.Sheets(sFrmShtName).Cells(2, lFrmCol).Resize(Rows.Count - 1, 1).Value
+End With
+
+
+End Sub
+
+
+Function fPg_Split_Src(inptFrmSht As String, inptDstSht As String, inptCol As String) As Variant
+Dim vValues As varinat ':vvalus = inptValues
+Dim i As Long
+Dim s As String
+
+Dim sFrmShtName As String: sFrmShtName = fKey2Val("PG_SETUP", "SHT_SRC_MAIN", "ERR"): If isSheetName_TB(sFrmShtName) = False Or sFrmShtName = 0 Or sFrmShtName = "" Then Stop
+Dim sDstShtName As String: sDstShtName = "MAIN": If isSheetName_TB(sDstShtName) = False Then Stop
+
+Dim lFrmCol_File As Long: lFrmCol_File = fPg_searchCol_TB("FILE", sFrmShtName): If lFrmCol_File = 0 Then Stop
+Dim lFrmCol_Trg As Long: lFrmCol_Trg = fPg_searchCol_TB(inptCol, sFrmShtName): If lFrmCol_Trg = 0 Then Stop
+
+Dim lDstCol_File As Long: lDstCol_File = fPg_searchCol_TB("FILE", sDstShtName): If lDstCol_File = 0 Then Stop
+Dim lDstCol_Trg As Long: lDstCol_Trg = fPg_searchCol_TB(inptCol, sDstShtName): If lDstCol_Trg = 0 Then Stop
+
+
+With ThisWorkbook.Sheets(sFrmShtName)
+    vValues = .Cells(2, lFrmCol_File).Resize(.Cells(Rows.Count, lFrmCol_File).End(xlUp).Row - 1, 1).Value 'DEBUG
+End With
+
+If inptbll <> "FILE" Then
+
+    For i = 1 To UBound(vValues)
+        s = vValues(i, 1)
+        s = fsplit(s, 2, "[SJIS]:")
+        s = fsplit(s, 2, "[UTF-8]:")
+    Next i
+    
+End If
+
+
+Select Case inptLbl
+
+
+Case "FILE"
+
+    'Lhs : FILE
+    For i = 1 To UBound(vValues)
+        s = vValues(i, 1)
+        s = fsplit(s, 2, "src\")
+        s = fsplit(s, 1, "[SJIS]:")
+        s = fsplit(s, 1, "[UTF-8]:")
+        s = Trim(s)
+        s = fsplit(s, 1, ",") & ",1)"
+        If s = ",1)" Then s = ""
+        vValues(i, 1) = s
+    Next i
+
+
+Case "CODE"
+    
+    'Rhs : CODE
+    For i = 1 To UBound(vValues)
+        s = vValues(i, 1)
+        If Left(Trim(s), 1) <> "'" Then
+             vValues(i, 1) = s
+        Else
+             vValues(i, 1) = s
+        End If
+    Next i
+
+
+Case "COUT"
+
+    'Rhs : COUT
+    For i = 1 To UBound(vValues)
+        s = vValues(i, 1)
+        If Left(Trim(s), 1) = "'" Then
+            vValues(i, 1) = " " & s
+        Else
+            vValues(i, 1) = ""
+        End If
+    
+    Next i
+
+
+Case "CALL"
+
+    'Rhs : CALL
+    For i = 1 To UBound(vValues)
+    s = vValues(i, 1)
+    If Left(Trim(s), 1) <> "'" Then vValues(i, 1) = fPg_GetCallName(s)
+    Next i
+
+
+                    
+Case "FNCN"
+
+    'Rhs : CALL
+    For i = 1 To UBound(vValues)
+    s = vValues(i, 1)
+    If Left(Trim(s), 1) <> "'" Then vValues(i, 1) = fpg_getFncName(s)
+    Next i
+    
+
+
+Case Else
+
+Stop
+
+End Select
+
+
+fPg_Split_Src = vValues
+
+
+End Function
+
+
+Sub Pg_Fill_LBL_DEF()
+Dim sFrmShtName As String
+Dim sDstShtName As String
+Dim sLblName As String
+
+'### DEFAULT_LABEL SHEET ###
+
+sFrmShtName = "LBL_DEF"
+sDstShtName = "MAIN"
+sLblName = "LBL_DEF"
+
+If isSheetName_TB(sDstShtName) = False Then Stop
+If isSheetName_TB(sFrmShtName) = False Then Stop
+If fPg_searchCol_TB("FILE", sFrmShtName) = 0 Then Stop
+If fPg_searchCol_TB(sLblName, sFrmShtName) = 0 Then Stop
+If fPg_searchCol_TB("FILE", sDstShtName) = 0 Then Stop
+If fPg_searchCol_TB(sLblName, sDstShtName) = 0 Then Stop
+
+Pg_Fill_Label sFrmShtName, sDstShtName, sLblName
+
+End Sub
+
+
+
+Sub Pg_Fill_Label(inptFrmSht As String, inptDstSht As String, inptLbl As String)
+Dim r As Range
+Dim s As String
+Dim i As Long
+
+Dim shtfrmName As String: shtfrmName = inptFrmSht
+Dim lColFrmFile As Long: lColFrmFile = fPg_searchCol_TB("FILE", inptFrmSht)
+Dim lColFrmLbl As Long: lColFrmLbl = fPg_searchCol_TB("LABEL", inptFrmSht)
+
+Dim shtDstName As String: shtDstName = inptDstSht
+Dim lColDstFile As Long: lColDstFile = fPg_searchCol_TB("FILE", inptDstSht)
+Dim lColDstLbl As Long: lColDstLbl = fPg_searchCol_TB(sDstColLbl, inptDstSht)
+
+Dim lRowSt As Long: lRowSt = 2:
+Dim lRowEd As Long
+
+On Error Resume Next
+
+With ThisWorkbook.Sheets(shtfrmName)
+lRowEd = .Cells(Rows.Count, 1).End(xlUp).Row + 1
+    
+    For i = lRowSt To lRowEd
+        
+        s = .Cells(i, fPg_searchCol_TB("FILE", inptFrmSht)).Value
+
+        If s <> "" Then
+
+            sMatchRow = Application.WorksheetFunction.Match(s, ThisWorkbook.Sheets(shtDstName).Columns(fPg_searchCol_TB("FILE", inptDstSht)), 0)
+        
+            If sMatchRow <> "" Then
+            
+                 ThisWorkbook.Sheets(shtDstName).Cells(sMatchRow, fPg_searchCol_TB(inptLbl, inptDstSht)).Value = _
+                  ThisWorkbook.Sheets(shtfrmName).Cells(i, fPg_searchCol_TB(inptLbl, inptFrmSht)).Value
+                        
+            End If
+        
+        End If
+        
+    Next i
+
+End With
+
+End Sub
+
+
+
+Sub Pg_Split_SJIS_SRC(inptSht As String)
+Dim r As Range
+Dim s As String
+Dim sFile As String
+Dim sShtName As String: sShtName = inptSht
+Dim lColFrmSrc As Long: lColSrc = fPg_searchCol_TB("SRC", sShtName): If fPg_searchCol_TB("SRC", sShtName) = 0 Then Stop
+Dim lColFile As Long: lColFile = fPg_searchCol_TB("FILE", sShtName): If fPg_searchCol_TB("FILE", sShtName) = 0 Then Stop
+Dim lColCode As Long: lColCode = fPg_searchCol_TB("CODE", sShtName): If fPg_searchCol_TB("CODE", sShtName) = 0 Then Stop
+Dim lColCout As Long: lColCout = fPg_searchCol_TB("COUT", sShtName): ' If fPg_searchCol_TB("COUT", sShtName) = 0 Then Stop
+Dim lColFnc As Long: lColFnc = fPg_searchCol_TB("FNCN", sShtName): ' If fPg_searchCol_TB("FNCN", sShtName) = 0 Then Stop
+Dim lColCall As Long: lColCall = fPg_searchCol_TB("CALL", sShtName): ' If fPg_searchCol_TB("CALL", sShtName) = 0 Then Stop
+Dim lRowSt As Long: lRowSt = 2
+Dim lRowEd As Long
+
+Dim i As Long
+Dim lRowEnd As Long
+
+With ThisWorkbook.Sheets(sShtName)
+    
+    lRowEd = .Cells(Rows.Count, lColSrc).End(xlUp).Row + 1
+    For i = lRowSt To lRowEd
+        sFile = .Cells(i, lColSrc).Value
+        If Left(sFile, 3) = "C:\" Then
+            'Lhs : FILE
+            s = fReplace(sFile, Folderpath, "")
+            s = fsplit(s, 1, "[SJIS]:")
+            s = fsplit(s, 1, "[UTF-8]:")
+            s = Trim(s)
+            s = fsplit(s, 1, ",") & ",1)"
+            ThisWorkbook.Sheets(sShtName).Cells(i, lColFile) = s
+            
+            'Rhs : CODE, COUT
+            s = sFile
+            s = fsplit(s, 2, "[SJIS]:")
+            s = fsplit(s, 2, "[UTF-8]:")
+            s = Trim(s)
+            If Left(Trim(s), 1) <> "'" Then
+                ThisWorkbook.Sheets(sShtName).Cells(i, lColCode) = s
+                If lColCall <> 0 Then ThisWorkbook.Sheets(sShtName).Cells(i, lColCall) = fPg_GetCallName(s)
+                If lColFnc <> 0 Then ThisWorkbook.Sheets(sShtName).Cells(i, lColFnc) = fSplit_FncName(s)
+            Else
+                If lColCout <> 0 Then ThisWorkbook.Sheets(sShtName).Cells(i, lColCout) = " " & s
+            End If
+            
+        End If
+        
+    Next i
+
+End With
+
+End Sub
+
+
+
+
+Sub fPg_Apply_Lbl_Fnc()
+
+Dim i As Long
+Dim v As Variant
+Dim r As Range
+Dim sFrmShtName As String: sFrmShtName = "LBL(DEF)": If isSheetName_TB(sFrmShtName) = False Then Stop
+Dim sDstShtName As String: sDstShtName = "MAIN": If isSheetName_TB(sDstShtName) = False Then Stop
+
+Dim lFrmCol_File As Long: lFrmCol_File = fPg_searchCol_TB("FILE", sFrmShtName): If lFrmCol_File = 0 Then Stop
+Dim lFrmCol_Trg As Long: lFrmCol_Trg = fPg_searchCol_TB("TEST_COL", sFrmShtName): If lFrmCol_Trg = 0 Then Stop
+
+Dim lDstCol_File As Long: lDstCol_File = fPg_searchCol_TB("FILE", sDstShtName): If lDstCol_File = 0 Then Stop
+Dim lDstCol_Trg As Long: lDstCol_Trg = fPg_searchCol_TB("TEST_COL", sDstShtName): If lDstCol_Trg = 0 Then Stop
+
+
+v = ThisWorkbook.Sheets(sFrmShtName).Cells(2, lFrmCol).Resize(Rows.Count - 1, 1).Value
+
+For i = 1 To UBound(v)
+
+   v(i, 1) = CStr(Left(v(i, 1), 5))
+   
+Next i
+
+ThisWorkbook.Sheets(sDstShtName).Cells(2, lDstCol_Trg).Resize(Rows.Count - 1, 1).Value = v
+
+End Sub
+
+
+Sub Pg_Split_SJIS_SINGLE(inptSht As String, inptCol As String)
+Dim r As Range
+Dim s As String
+Dim sFile As String
+Dim sShtName As String: sShtName = inptSht
+Dim sColName As String: sColName = fPg_searchCol_TB(sShtName, sColName): If sColName = 0 Then Stop
+
+Dim lRowSt As Long: lRowSt = 2
+Dim lRowEd As Long
+
+Dim i As Long
+Dim lRowEnd As Long
+
+
+'
+'With ThisWorkbook.Sheets(sShtName)
+'
+'    lRowEd = .Cells(Rows.Count, lColSrc).End(xlUp).Row + 1
+'    For i = lRowSt To lRowEd
+'
+'        sFile = .Cells(i, lColSrc).Value
+'        If Left(sFile, 3) = "C:\" Then
+'            'Lhs : FILE
+'            s = fReplace(sFile, Folderpath, "")
+'            s = fsplit(s, 1, "[SJIS]:")
+'            s = fsplit(s, 1, "[UTF-8]:")
+'            s = Trim(s)
+'            s = fsplit(s, 1, ",") & ",1)"
+'            ThisWorkbook.Sheets(sShtName).Cells(i, lColFile) = s
+'
+'            'Rhs : CODE, COUT
+'            s = sFile
+'            s = fsplit(s, 2, "[SJIS]:")
+'            s = fsplit(s, 2, "[UTF-8]:")
+'            s = Trim(s)
+'            If Left(Trim(s), 1) <> "'" Then
+'                ThisWorkbook.Sheets(sShtName).Cells(i, lColCode) = s
+'                If lColCall <> 0 Then ThisWorkbook.Sheets(sShtName).Cells(i, lColCall) = fPg_GetCallName(s)
+'                If lColFnc <> 0 Then ThisWorkbook.Sheets(sShtName).Cells(i, lColFnc) = fSplit_FncName(s)
+'            Else
+'                If lColCout <> 0 Then ThisWorkbook.Sheets(sShtName).Cells(i, lColCout) = " " & s
+'            End If
+'
+'        End If
+'
+'    Next i
+'
+'End With
+
+End Sub
+
+
+
+
+
+Sub FU_Open()
+
+With UF_Message
+    .tbx_Msg.MultiLine = True
+    .Show vbModeless
+End With
+
+End Sub
+
+Sub UF_printMsg(inptStr As String)
+Dim s As String
+
+s = Format(Now, "YYYY/MM/DD HH:MM:SS") & "   " & inptStr
+s = s & vbLf & UF_Message.tbx_Msg.Value
+
+UF_Message.tbx_Msg.Value = s
+
+End Sub
+
+
 
