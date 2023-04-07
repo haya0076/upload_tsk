@@ -1,9 +1,5 @@
 Option Explicit
 
-Const cBlue As String = -4165632
-Const cWBlue As String = -1003520
-Const cRed As String = -16776961
-
 Type tStack
 
     outPutRow As Long
@@ -22,12 +18,680 @@ Type tIndexedtext
 End Type
 
 
+Function fGetColorCode(inptColor As String) As String
+
+Dim sRslt As String
+
+
+Select Case UCase(inptColor)
+
+Case "RED"
+
+    sRslt = -16776961
+
+Case "BLUE"
+
+    sRslt = -4165632
+
+Case "WBLUE"
+
+    sRslt = -1003520
+
+Case Else
+
+    Stop
+
+End Select
+
+fGetColorCode = sRslt
+
+End Function
+
+
+
+
+
+Sub Uev_Split_Src_ShtMain()
+
+cPrm_Split_Src "SRC_MAIN", "MAIN"
+
+End Sub
+
+
+Sub Uev_Split_Src_ShtLBLDEF()
+
+cPrm_Split_Src "SRC_LBL(DEF)", "LBL(DEF)"
+
+End Sub
+
+
+
+Sub Uev_Apply_LBL()
+
+    cPrm_Apply_LBL "LBL(DEF)", "MAIN", "LBL(DEF)"
+
+End Sub
+
+
+Sub Uev_Apply_LBLTmp()
+
+    cPrm_Apply_LBL "Sheet2", "MAIN", "LBL(DEF)"
+
+End Sub
+
+Sub cPrm_Split_Src(inptFrmSht As String, inptDstSht As String)
+
+'SRC => FILE, CODE, COUT, FNC
+
+Dim sFrmShtName As String: sFrmShtName = inptFrmSht
+Dim sDstShtName As String: sDstShtName = inptDstSht
+
+'sFrmShtName = fPg_K2V_PG_CHK(sFrmShtName, True)
+'sDstShtName = fPg_K2V_PG_CHK(sDstShtName, True)
+
+If isSheetName_TB(sFrmShtName) = False Then Stop
+If isSheetName_TB(sDstShtName) = False Then Stop
+
+If fPg_searchField_TB("SRC", sFrmShtName) = 0 Then Stop
+
+Msq_Split_Src inptFrmSht:=sFrmShtName, _
+                inptDstSht:=sDstShtName
+                
+
+End Sub
+
+
+Sub cPrm_Apply_LBL(inptFrmSht As String, inptDstSht As String, inptLbl As String)
+
+'Apply Label (Match row)
+
+Dim sFrmShtName As String: sFrmShtName = inptFrmSht
+Dim sDstShtName As String: sDstShtName = inptDstSht
+Dim sLbl As String: sLbl = inptLbl
+
+'sFrmShtName = fPg_K2V_PG_CHK(sFrmShtName, True)
+'sDstShtName = fPg_K2V_PG_CHK(sDstShtName, True)
+
+If isSheetName_TB(sFrmShtName) = False Then Stop
+If isSheetName_TB(sDstShtName) = False Then Stop
+
+If fPg_searchField_TB("FILE", sFrmShtName) = 0 Then Stop
+If fPg_searchField_TB("FILE", sDstShtName) = 0 Then Stop
+If fPg_searchField_TB(sLbl, sFrmShtName) = 0 Then Stop
+If fPg_searchField_TB(sLbl, sDstShtName) = 0 Then Stop
+
+
+Msq_Apply_LBL inptFrmSht:=sFrmShtName, _
+                inptDstSht:=sDstShtName, _
+                inptLbl:=sLbl, _
+                inptFrmCol_File:=fPg_searchField_TB("FILE", sFrmShtName), _
+                inptFrmCol_Lbl:=fPg_searchField_TB(sLbl, sFrmShtName), _
+                inptDstCol_File:=fPg_searchField_TB("FILE", sDstShtName), _
+                inptDstCol_Lbl:=fPg_searchField_TB(sLbl, sDstShtName)
+
+End Sub
+
+
+Sub cK2V_Apply_LBL(inptFrmSht As String, inptDstSht As String, inptLbl As String)
+
+'Apply Label (Match row)
+
+Dim sFrmShtName As String: sFrmShtName = inptFrmSht
+Dim sDstShtName As String: sDstShtName = inptDstSht
+Dim sLbl As String: sLbl = inptLbl
+
+sFrmShtName = fPg_K2V_PG_CHK(sFrmShtName, True)
+sDstShtName = fPg_K2V_PG_CHK(sDstShtName, True)
+
+If fPg_searchField_TB("FILE", sFrmShtName) = 0 Then Stop
+If fPg_searchField_TB("FILE", sDstShtName) = 0 Then Stop
+If fPg_searchField_TB(sLbl, sFrmShtName) = 0 Then Stop
+If fPg_searchField_TB(sLbl, sDstShtName) = 0 Then Stop
+
+
+Msq_Apply_LBL inptFrmSht:=sFrmShtName, _
+                inptDstSht:=sDstShtName, _
+                inptLbl:=sLbl, _
+                inptFrmCol_File:=fPg_searchField_TB("FILE", sFrmShtName), _
+                inptFrmCol_Lbl:=fPg_searchField_TB(sLbl, sFrmShtName), _
+                inptDstCol_File:=fPg_searchField_TB("FILE", sDstShtName), _
+                inptDstCol_Lbl:=fPg_searchField_TB(sLbl, sDstShtName)
+
+End Sub
+
+
+Sub Msq_Apply_LBL(inptFrmSht As String, _
+                    inptDstSht As String, _
+                    inptLbl As String, _
+                    inptFrmCol_File As String, _
+                    inptFrmCol_Lbl As String, _
+                    inptDstCol_File As String, _
+                    inptDstCol_Lbl As String)
+
+Dim r As Range
+Dim s As String
+Dim sFile As String
+Dim sFrmShtName As String: sFrmShtName = inptFrmSht
+Dim sDstShtName As String: sDstShtName = inptDstSht
+Dim lFrmCol_File As Long: lFrmCol_File = inptFrmCol_File
+Dim lDstCol_File As Long: lDstCol_File = inptDstCol_File
+Dim lFrmCol_Lbl As Long: lFrmCol_Lbl = inptFrmCol_Lbl
+Dim lDstCol_Lbl As Long: lDstCol_Lbl = inptDstCol_Lbl
+Dim lRowEd As Long
+Dim i As Long
+Dim sSearch As String
+Dim lMatchRow As Long
+
+With ThisWorkbook.Sheets(sFrmShtName)
+    lRowEd = .Cells(Rows.Count, 1).End(xlUp).Row + 1
+    For i = 2 To lRowEd
+        sSearch = .Cells(i, lFrmCol_File).Value
+
+        lMatchRow = fPg_searchRow_TB(sSearch, sDstShtName, lDstCol_File)
+      
+        If sSearch <> "" And lMatchRow > 0 Then
+              ThisWorkbook.Sheets(sDstShtName).Cells(lMatchRow, lDstCol_Lbl).Value = .Cells(i, lFrmCol_Lbl).Value
+        End If
+
+    Next i
+
+End With
+
+End Sub
+
+
+
+Sub HighLightParentheses()
+
+HighLightBetweenWord "{", "}", "wblue"
+
+End Sub
+
+
+
+Sub HighLightBetweenWord(inptLhs As String, inptRhs As String, Optional inptColor As String = "red")
+
+Dim r As Range
+Dim lPos As Long: lPos = 1
+Dim sLhs As String: sLhs = inptLhs
+Dim sRhs As String: sRhs = inptRhs
+Dim sColor As String: sColor = fGetColorCode(inptColor)
+
+For Each r In Selection
+
+    Do Until InStr(lPos, r, sLhs) = 0
+
+        With r.Characters(Start:=InStr(lPos, r, sLhs), Length:=InStr(lPos, r, sRhs) - InStr(lPos, r, sLhs) + 1).Font
+            .Name = "ＭＳ ゴシック"
+            .FontStyle = "Regular"
+            .Size = 10.5
+            .Strikethrough = False
+            .Superscript = False
+            .Subscript = False
+            .OutlineFont = False
+            .Shadow = False
+            .Underline = xlUnderlineStyleNone
+             .Color = sColor
+            .TintAndShade = 0
+            .ThemeFont = xlThemeFontMinor
+        End With
+        
+        lPos = InStr(lPos, r, sRhs) + 1
+    Loop
+    
+    lPos = 1
+    
+Next r
+
+End Sub
+
+
+
+Function fPg_K2V_PG_CHK(inptStr As String, Optional inptIsSht As Boolean = False) As String
+
+Dim sRslt As String: sRslt = fKey2Val("PG_SETUP", inptStr, "ERR")
+
+If sRslt = "ERR" Then Stop
+If sRslt = "" Then Stop
+If inptIsSht = True And isSheetName_TB(sRslt) = False Then Stop
+
+fPg_K2V_PG_CHK = fKey2Val("PG_SETUP", inptStr)
+
+End Function
+
+
+
+Sub Msq_Split_Src(inptFrmSht As String, inptDstSht As String)
+'inptFrm Col Dst Col
+Dim r As Range
+Dim s As String
+Dim sFile As String
+Dim sFrmShtName As String: sFrmShtName = inptFrmSht
+Dim sDstShtName As String: sDstShtName = inptDstSht
+Dim lColEd As Long
+Dim lRowEd As Long: lRowEd = ThisWorkbook.Sheets(sFrmShtName).Cells(Rows.Count, 1).End(xlUp).Row + 1
+Dim i As Long
+Dim ii As Long
+Dim v As Variant
+
+With ThisWorkbook.Sheets(sDstShtName)
+    
+    lColEd = .Cells(1, Columns.Count).End(xlToLeft).Column
+    .Range("A2").Resize(Rows.Count - 1, lColEd).Clear
+
+    For i = 1 To lColEd
+        If .Cells(1, i).Value <> "" Then
+
+              v = f_Split_Src_byCase(sFrmShtName, sDstShtName, .Cells(1, i).Value)
+
+            For ii = 2 To UBound(v) + 1
+              .Cells(ii, i).Value = v(ii - 1, 1)
+            Next ii
+        End If
+
+    Next i
+
+End With
+
+End Sub
+
+
+
+Function f_Split_Src_byCase(inptFrmSht As String, inptDstSht As String, inptField As String) As Variant
+Dim vValues As Variant
+Dim i As Long
+Dim s As String
+Dim lSide As Long
+
+Dim sFrmShtName As String: sFrmShtName = inptFrmSht
+Dim sDstShtName As String: sDstShtName = inptDstSht
+Dim lFrmCol_Src As Long: lFrmCol_Src = fPg_searchField_TB("SRC", sFrmShtName)
+
+
+With ThisWorkbook.Sheets(sFrmShtName)
+
+    vValues = .Cells(2, lFrmCol_Src).Resize(.Cells(Rows.Count, lFrmCol_Src).End(xlUp).Row - 1, 1).Value
+
+End With
+
+If inptField = "FILE" Then
+    lSide = 1
+Else
+    lSide = 2
+End If
+
+
+For i = 1 To UBound(vValues)
+    s = vValues(i, 1)
+    s = fsplit(s, 2, "src\")
+    s = fsplit(s, lSide, "[SJIS]:")
+    s = fsplit(s, lSide, "[UTF-8]:")
+    vValues(i, 1) = s
+Next i
+
+
+Select Case inptField
+
+
+Case "FILE"
+
+    'Lhs : FILE
+    For i = 1 To UBound(vValues)
+        s = vValues(i, 1)
+        s = Trim(s)
+        s = fsplit(s, 1, ",") & ",1)"
+        If s = ",1)" Then s = ""
+        vValues(i, 1) = s
+    Next i
+
+Case "CODE"
+    'Rhs : CODE
+    For i = 1 To UBound(vValues)
+        s = vValues(i, 1)
+        If Left(Trim(s), 1) <> "'" Then
+             vValues(i, 1) = s
+        Else
+             vValues(i, 1) = ""
+        End If
+    Next i
+    
+Case "COUT"
+    'Rhs : COUT
+    For i = 1 To UBound(vValues)
+        s = vValues(i, 1)
+        If Left(Trim(s), 1) = "'" Then
+            vValues(i, 1) = " " & s
+        Else
+            vValues(i, 1) = ""
+        End If
+    
+    Next i
+    
+    
+'   x FILE => MATCH ROW TYPE
+'  Case "LBL(DEF)"
+'    'Rhs : CALL
+'    For i = 1 To UBound(vValues)
+'    s = vValues(i, 1)
+'    If Left(Trim(s), 1) <> "'" Then vValues(i, 1) = fPg_GetCallName(s)
+'    Next i
+'
+'
+'Case "CALL"
+'
+'    Dim FncLst As String
+'
+'    FncLst = fReplace(WorksheetFunction.TextJoin("|", _
+'                            True, _
+'                            ThisWorkbook.Sheets(ShtFncLst).Columns(fPg_searchCol("LABEL", ThisWorkbook.Name, ShtFncLst))), _
+'                            "LABEL|", "")
+'
+'    'Rhs : CALL
+'    For i = 1 To UBound(vValues)
+'    s = vValues(i, 1)
+'    If Left(Trim(s), 1) <> "'" Then vValues(i, 1) = "FNC"
+'    Next i
+    
+Case Else
+
+vValues = Array()
+
+End Select
+
+
+f_Split_Src_byCase = vValues
+
+
+End Function
+
+
+
+
+Function isSheetName_TB(inptStr As String) As Boolean
+Dim v As Variant
+
+For Each v In ThisWorkbook.Sheets
+    If v.Name = inptStr Then
+        isSheetName_TB = True
+        Exit Function
+    End If
+Next v
+
+    isSheetName_TB = False
+
+End Function
+
+
+Sub ClearConditions()
+    Selection.FormatConditions.Delete
+End Sub
+
+
+
+Sub HighLightCell(inptCol As String, inptSht As String)
+Dim sKeyCol As String: sKeyCol = inptCol
+Dim sSht As String: sSht = inptSht
+Dim sWords As String
+Dim sColor As String
+Dim v As Variant
+
+With ThisWorkbook.Sheets(sSht)
+    .Range(.Cells(fPg_searchRow("【ST】", ThisWorkbook.Name, sSht) + 1, fPg_searchCol_AS(sKeyCol)), Cells(Rows.Count, fPg_searchCol_AS(sKeyCol))).Select
+    
+        sWords = Cells(fPg_searchRow("【COND】", ThisWorkbook.Name, sSht), fPg_searchCol_AS(sKeyCol)).Value
+
+    For Each v In Split(sWords, "|")
+        
+        If sWords <> "" Then Call SetConditions(fsplit(v, 1, ":"), fsplit(v, 2, ":"))
+        
+    Next v
+    
+End With
+
+
+End Sub
+
+
+
+Sub SetConditions(inptWord As String, inptColor As String)
+Dim sWord As String: sWord = inptWord
+Dim sColor As String: sColor = UCase(inptColor)
+
+
+Selection.FormatConditions.Add Type:=xlTextString, String:=inptWord, _
+    TextOperator:=xlContains
+Selection.FormatConditions(Selection.FormatConditions.Count).SetFirstPriority
+With Selection.FormatConditions(1).Font
+    .TintAndShade = 0
+End With
+With Selection.FormatConditions(1).Interior
+    .PatternColorIndex = xlAutomatic
+    .TintAndShade = 0
+End With
+
+    
+Select Case sColor
+ Case "RED"
+    With Selection.FormatConditions(1).Font
+        .Color = -16383844
+    End With
+    With Selection.FormatConditions(1).Interior
+        .Color = 13551615
+    End With
+
+ Case "YELLOW"
+     With Selection.FormatConditions(1).Font
+        .Color = -16754788
+    End With
+    With Selection.FormatConditions(1).Interior
+        .Color = 10284031
+    End With
+
+ Case "GREEN"
+    With Selection.FormatConditions(1).Font
+        .Color = -16752384
+    End With
+    With Selection.FormatConditions(1).Interior
+        .Color = 13561798
+    End With
+
+
+ Case "BLUE"
+
+    With Selection.FormatConditions(1).Font
+        .Color = -10477568
+        .TintAndShade = 0
+    End With
+    With Selection.FormatConditions(1).Interior
+        .PatternColorIndex = xlAutomatic
+        .ThemeColor = xlThemeColorAccent5
+        .TintAndShade = 0.599963377788629
+    End With
+ 
+ 
+ Case "【COND】"
+    'Do nothing
+ 
+ Case Else
+    Stop
+
+End Select
+
+    Selection.FormatConditions(1).StopIfTrue = True
+
+End Sub
+
+
+Function fPg_searchRow_TB(inptKey As String, inptSht As String, Optional inptCol As Long = 1) As Long
+
+ fPg_searchRow_TB = fPg_searchRow(inptKey, ThisWorkbook.Name, inptSht, inptCol)
+
+End Function
+
+Function fPg_searchField_TB(inptKey As String, inptSht As String) As Long
+    
+ fPg_searchField_TB = fPg_searchCol(inptKey, ThisWorkbook.Name, inptSht)
+ 
+End Function
+
+Function fPg_searchCol_AS(inptKey As String)
+ fPg_searchCol_AS = fPg_searchCol(inptKey, ThisWorkbook.Name, ActiveSheet.Name)
+End Function
+
+Function fPg_searchRow_AS(inptKey As String)
+ fPg_searchRow_AS = fPg_searchRow(inptKey, ThisWorkbook.Name, ActiveSheet.Name)
+End Function
+
+
+Function fPg_searchRow(inptKey As String, inptBook As String, inptSht As String, Optional inptCol As Long = 1) As Long
+'FIND => ROW
+'NOT  => 0
+Dim sWbName As String:  sWbName = inptBook
+Dim sWsName As String:  sWsName = inptSht
+Dim sKey As String: sKey = inptKey
+Dim lCol As Long: lCol = inptCol
+Dim sMatchCol As String
+Dim sRslt As String
+Dim rCol As Range
+On Error Resume Next
+
+With Workbooks(sWbName).Worksheets(sWsName)
+    Set rCol = .Columns(lCol)
+    If rCol Is Nothing Then InsertLog ("FAIL [searchActShtField] Book or Sheet name is wrong")
+        sMatchCol = Application.WorksheetFunction.Match(sKey, rCol, 0)
+        If sMatchCol <> "" Then
+                sRslt = sMatchCol
+            Else
+                sRslt = ""
+        End If
+End With
+
+fPg_searchRow = CLng(sRslt)
+
+End Function
+
+
+Function fPg_searchCol(inptKey As String, inptBook As String, inptSht As String) As Long
+'FIND => COLUMN
+'NOT  => 0
+Dim sWbName As String:  sWbName = inptBook
+Dim sWsName As String:  sWsName = inptSht
+Dim sKey As String: sKey = inptKey
+Dim sMatchRow As String
+Dim sRslt As String
+Dim rRow As Range
+On Error Resume Next
+
+With Workbooks(sWbName).Worksheets(sWsName)
+    Set rRow = .Rows(1)
+    If rRow Is Nothing Then InsertLog ("FAIL [searchActShtField] Book or Sheet name is wrong")
+        sMatchRow = Application.WorksheetFunction.Match(sKey, rRow, 0)
+        If sMatchRow <> "" Then
+                sRslt = sMatchRow
+            Else
+                sRslt = ""
+        End If
+End With
+
+fPg_searchCol = CLng(sRslt)
+
+End Function
+
+
+
+Sub Pg_FillDLLabel(inptFrmSht As String, inptDstSht As String, inptDstColLbl As String)
+Dim r As Range
+Dim s As String
+Dim i As Long
+
+Dim sDstColLbl As String: sDstColLbl = inptDstColLbl
+
+Dim shtfrmName As String: shtfrmName = inptFrmSht
+Dim lColFrmFile As Long: lColFrmFile = fPg_searchCol("FILE", ThisWorkbook.Name, inptFrmSht): If lColFrmFile = 0 Then Stop
+Dim lColFrmLbl As Long: lColFrmLbl = fPg_searchCol("LABEL", ThisWorkbook.Name, inptFrmSht): If lColFrmLbl = 0 Then Stop
+
+Dim shtDstName As String: shtDstName = inptDstSht
+Dim lColDstFile As Long: lColDstFile = fPg_searchCol("FILE", ThisWorkbook.Name, inptDstSht): If lColDstFile = 0 Then Stop
+Dim lColDstLbl As Long: lColDstLbl = fPg_searchCol(sDstColLbl, ThisWorkbook.Name, inptDstSht): If lColDstLbl = 0 Then Stop
+
+Dim lRowSt As Long: lRowSt = 2
+Dim lRowEd As Long
+
+
+On Error Resume Next
+
+With ThisWorkbook.Sheets(shtfrmName)
+lRowEd = .Cells(Rows.Count, 1).End(xlUp).Row + 1
+    
+    For i = lRowSt To lRowEd
+        
+        s = .Cells(i, lColFrmFile).Value
+
+        If s <> "" Then
+
+            sMatchRow = Application.WorksheetFunction.Match(s, ThisWorkbook.Sheets(shtDstName).Columns(lColDstFile), 0)
+        
+            If sMatchRow <> "" Then
+            
+                 ThisWorkbook.Sheets(shtDstName).Cells(sMatchRow, lColDstLbl).Value = _
+                  ThisWorkbook.Sheets(shtfrmName).Cells(i, lColFrmLbl).Value
+                        
+            End If
+        
+        End If
+        
+    Next i
+
+End With
+
+End Sub
+
+
+
+Function fPg_GetCallName(inptStr As String) As String
+
+'''
+
+End Function
+
+
+
+Function fTrim_FncName(inptStr As String) As String
+
+fTrim_FncName = fsplit(fReplace(inptStr, fRegxFirstMatch(inptStr, ".*(Function|Sub|Property)\s+"), ""), 1, "(")
+
+End Function
+
+
+
+
+Function fSplit_FncName(inptFncName As String) As String
+
+Dim s As String: s = inptFncName
+Dim sRslt As String
+Dim arr As Variant
+
+arr = Split(fsplit(s, 1, "("), " ")
+
+
+If UBound(arr) = -1 Then
+    sRslt = ""
+Else
+    sRslt = CStr(arr(UBound(arr)))
+End If
+
+fSplit_FncName = sRslt
+
+End Function
+
+
+
 
 Sub fPg_UpdateRow()
 Dim sKey As String '
 Dim i As Long '
 Dim ii As Long
-Dim sDstWs As String: sDstWs = "DOWNLOAD"
+Dim sDstWs As String: sDstWs = "MAIN"
 Dim sMatchRow As String
 Dim sRslt As String
 Dim rRow As Range
@@ -101,30 +765,8 @@ End Sub
 
 
 ''''''''TRY
-Sub createCmpSQLnnnSheet()
-
-Dim rCopy As Range: Set rCopy = ThisWorkbook.Sheets("COPY_FROM").Range("A1:B5")
-Dim wb As Workbook: Set wb = Workbooks("MACRO_221002.xlsm")
-Dim i As Long
 
 
-For i = 1 To 2
-
-    wb.Sheets(Sheets.Count).Activate
-    
-    With wb.Sheets.Add(After:=ActiveSheet)
-        
-        rCopy.Copy
-        .Paste
-        .Name = "SQL" & Format(i, "000")
-        .Range("A1").Select
-        ActiveCell.FormulaR1C1 = "SQL" & Format(i, "000")
-    
-    End With
-
-Next i
-
-End Sub
 
 
 
@@ -143,8 +785,8 @@ End Sub
 
 
 
-Sub FillColor(inptRng As Range)
-' FillColor(activesheet.range("A7"))
+Sub FillDLColor(inptRng As Range)
+' FillDLColor(activesheet.range("A7"))
 
     With inptRng.Interior
         .Pattern = xlSolid
@@ -202,12 +844,12 @@ Sub PickLabel_Full(inptFileCol As Long, inptLabelCol As Long)
 Dim i As Long
 Dim ii As Long
 Dim wsDst As Worksheet: Set wsDst = SelectOrCreateWs("INDEX")
-Dim wsFrm As Worksheet: Set wsFrm = ThisWorkbook.Worksheets("DOWNLOAD")
+Dim wsFrm As Worksheet: Set wsFrm = ThisWorkbook.Worksheets("MAIN")
 Dim ldstRow As Long: ldstRow = 2
 Dim sSp As String
 Dim sPtn As String
-Dim lFRM_FILE As Long: lFRM_FILE = inptFileCol
-Dim lFRM_LABEL As Long: lFRM_LABEL = inptLabelCol
+Dim lColFrmFile As Long: lColFrmFile = inptFileCol
+Dim lColFrmLabel As Long: lColFrmLabel = inptLabelCol
 
 With wsDst
     If .Range("A1").Value = "OFF" Then Exit Sub
@@ -216,32 +858,32 @@ End With
 
 With wsFrm
 
-    For i = 2 To .Cells(Rows.Count, lFRM_FILE).End(xlUp).Row
+    For i = 2 To .Cells(Rows.Count, lColFrmFile).End(xlUp).Row
     
-     If .Cells(i, lFRM_LABEL).Value <> "" And _
-         Left(Trim(.Cells(i, lFRM_LABEL)), 1) = "【" Or _
-         .Cells(i, lFRM_LABEL).Value = "*" _
+     If .Cells(i, lColFrmLabel).Value <> "" And _
+         Left(Trim(.Cells(i, lColFrmLabel)), 1) = "【" Or _
+         .Cells(i, lColFrmLabel).Value = "*" _
         Then
 
         Select Case True
 
-            Case Left(Trim(.Cells(i, lFRM_LABEL)), 4) = "【FNC"
+            Case Left(Trim(.Cells(i, lColFrmLabel)), 4) = "【FNC"
                  sSp = ""
 
-            Case Left(Trim(.Cells(i, lFRM_LABEL)), 4) = "【SQL"
+            Case Left(Trim(.Cells(i, lColFrmLabel)), 4) = "【SQL"
                 sSp = "   "
 
-            Case Left(Trim(.Cells(i, lFRM_LABEL)), 1) = "【"
+            Case Left(Trim(.Cells(i, lColFrmLabel)), 1) = "【"
                 sSp = "      "
 
-            Case Left(Trim(.Cells(i, lFRM_LABEL)), 1) = "*"
+            Case Left(Trim(.Cells(i, lColFrmLabel)), 1) = "*"
                 sSp = "    　    "
          End Select
          
          
         For ii = 1 To 9
         
-            If ii = lFRM_LABEL Then
+            If ii = lColFrmLabel Then
                 wsDst.Cells(ldstRow, ii).Value = sSp & wsFrm.Cells(i, ii)
             Else
                 wsDst.Cells(ldstRow, ii).Value = wsFrm.Cells(i, ii)
@@ -262,8 +904,8 @@ End Sub
 
 
 Sub PickLabel()
-Dim lFRM_FILE As Long: lFRM_FILE = fCol("A")
-Dim lFRM_LABEL As Long: lFRM_LABEL = fCol("D")
+Dim lColFrmFile As Long: lColFrmFile = fCol("A")
+Dim lColFrmLabel As Long: lColFrmLabel = fCol("D")
 
 Dim lDST_LABEL As Long: lDST_LABEL = fCol("D")
 Dim rCell As Range
@@ -272,7 +914,7 @@ sPtn = "【SQL"
 
 'Application.ScreenUpdating = False
 
-Call PickLabel_Full(lFRM_FILE, lFRM_LABEL)
+Call PickLabel_Full(lColFrmFile, lColFrmLabel)
 
     With ThisWorkbook.Sheets("index")
 
@@ -344,7 +986,7 @@ With SelectOrCreateWs(sWs)
 End With
 
 
-sWs = "DOWNLOAD"
+sWs = "MAIN"
 
 With SelectOrCreateWs(sWs)
     'CONST
@@ -382,161 +1024,6 @@ End Sub
 
 
 
-Function fPrgRet1(inptStr As String, inptCase As String) As String
-'inptStr = column | match | submatch
-
-Dim sResult As String
-
-Select Case inptCase
-    Case "column"
-        sResult = fSplit(inptStr, 1, ":")
-        
-    Case "match"
-        sResult = fSplit( _
-                        fSplit(inptStr, 2, ":") _
-                        , 1 _
-                        , ",")
-    Case "submatch"
-        sResult = fSplit( _
-                        fSplit(inptStr, 2, ":") _
-                        , 2 _
-                        , ",")
-    Case Else
-        Stop
-End Select
-    
-fPrgRet1 = sResult
-    
-End Function
-
-Sub PrgDownloadMatches(inptPtn As String, inptShtName As String, inptCells As String)
-'full code patern => "|"
-Dim vFile As Variant
-Dim sFolder As String: sFolder = fKey2Val("PRG_SHT_SETUP", "PRJ_SRC_PATH")
-Dim sLine As String
-Dim lRow As Long: lRow = 2
-Dim lCnt As Long: lCnt = 1    'total line count
-Dim lIndex As Long            'temp index
-
-Dim sPtn As String: sPtn = inptPtn
-Dim sShtN As String: sShtN = inptShtName
-Dim sCells As String: sCells = inptCells
-Dim sResult As String
-
-                                    
-'Dim sthOut As Worksheet: Set shtout = SelectOrCreateWs("FNC_LIST")
-
-'If sMatchKey = "NotMatch" Or sMatchKey = "" Then printLog ("DownloadMatchList Key2Ver Error")
-
-'MAKE FUNCTION NAME LIST
-For Each vFile In fGetFilePathInFolder(sFolder) 'Folder path("C:\ANY") : string  =>  File list : object
-
-    With CreateObject("Scripting.FileSystemObject").OpenTextFile(CStr(vFile))
-            
-     Do While .AtEndOfStream <> True
-                
-                sLine = CStr(.readline)
-            
-                 'Join split lines
-                 If Right(sLine, 2) = " _" Then
-                  'splited
-                  
-                      lIndex = lCnt
-                      slinetmp = sLine
-                     
-                     Do
-                         sLine = CStr(.readline)
-                         slinetmp = slinetmp & sLine
-                          lCnt = lCnt + 1
-                     Loop While Right(sLine, 2) = " _"
-                     
-                     sLine = slinetmp
-                     sLine = fReplaceRegx(sLine, "\(?\s_[\s\r]+\)?", " ", True) & vbLf  'replace "_ \n" to " "
-                     slinetmp = ""
-                       
-                Else
-                'not
-                     lIndex = lCnt
-                     sLine = sLine
-                   
-                 End If
-    
-    
-                ' >> regx match
-                
-                'out put line
-                With ThisWorkbook.Sheets(sShtN)
-                
-                        If fRegxTest(sLine, sPtn) = True Then
-                        
-                            For Each v In Split(sCells, "|")
-                                
-                                        .Cells(lRow, 1).Value = _
-                                            Dir(vFile) & "(" & lCnt & ")"
-
-
-                                        .Cells(lRow, fPrgRet1(CStr(v), "column")).Value = _
-                                            fRegxMatch(sLine _
-                                                        , sPtn _
-                                                        , fPrgRet1(CStr(v), "match") _
-                                                        , fPrgRet1(CStr(v), "submatch"))
-                                
-                            Next v
-                         
-                        'Output line , RegxPatterns1,2
-                         
-'                         Dim tmpCol As Integer: tmpCol = 1
-'                         .Cells(lRow, tmpCol + 0).Value = lIndex
-'                         .Cells(lRow, tmpCol + 1).Value = sLine
-'                         .Cells(lRow, tmpCol + 2).Value = Dir(CStr(vFile))
-'                         .Cells(lRow, tmpCol + 3).Value = fKey2Val("GET_FILETYPE", Dir(CStr(vFile)))
-'                         .Cells(lRow, tmpCol + 4).Value = Dir(CStr(vFile)) & "-" & lCnt  'Uniq Key
-                    
-                    
-                    
-                        'next row
-                        lRow = lRow + 1
-                           
-                        
-                        End If
-                        
-   
-'
-'                End If
-'
-                'next line
-                lCnt = lCnt + 1
-                    
-                    
-'               'REGX IN sLine
-'
-'                Debug.Print sLine
-'                If fRegxTest(sLine, sMatchPtn) Then Debug.Print "true"
-
-            End With 'Sheet
-
-            Loop 'PER sLine
-                
-     .Close
-    End With 'ReadObj
-
-    
-    'stack=======================
-
-    lCnt = 1
-
-Next vFile
-
-'!YET if duplicate function name
-fGetFncCall = sResult
-End Sub
-
-
-
-
-
-
-
 
 Sub ooo_CREATE_PATERN_ooo()
 End Sub
@@ -560,7 +1047,7 @@ Dim sLine As String
 Dim sResult As String
 'Dim sthOut As Worksheet: Set shtout = SelectOrCreateWs("FncList")
 
-'If sMatchKey = "NotMatch" Or sMatchKey = "" Then printLog ("DownloadMatchList Key2Ver Error")
+'If sMatchKey = "NotMatch" Or sMatchKey = "" Then InsertLog ("DownloadMatchList Key2Ver Error")
 
 'MAKE FUNCTION NAME LIST
 For Each vFile In fGetFilePathInFolder(sFolder) 'Folder path("C:\ANY") : string  =>  File list : object
@@ -603,7 +1090,7 @@ Sub WriteValueOnSht(inptSht As String, inptKey As String, inptVal As String)
 
 Dim rCell As Range
 
-If IsExistWs(inptSht) = False Then printLog ("not exist worksheet name :" & inptSht): Exit Sub
+If IsExistWs(inptSht) = False Then InsertLog ("not exist worksheet name :" & inptSht): Exit Sub
 
 With ThisWorkbook.Sheets(inptSht)
 
@@ -625,7 +1112,7 @@ End Sub
 
 
 
-Sub HighlightWord(Optional inptColor As String = "red", Optional inptPtn As String = "PRG_MARK_PTN")
+Sub HighLightWord(Optional inptColor As String = "red", Optional inptPtn As String = "PRG_MARK_PTN")
 Dim rCell As Range
 Dim sText As String
 Dim sMatch As String
@@ -985,7 +1472,7 @@ End Function
 
 
 
-'Sub FillWsFunction_OBJLIST()
+'Sub FillDLWsFunction_OBJLIST()
 '
 'Dim i As Long: i = 2
 'Dim shtOBJLST: shtOBJLST = "OBJ_LIST"
@@ -1070,25 +1557,24 @@ End If
 
 End Function
 
+Sub Spoil(inptStr As String)
+    InsertLog (inptStr)
+End Sub
 
 
-Sub printLog(inptStr As String, Optional inptFile As String = "")
-
+Sub InsertLog(inptStr As String, Optional inptFile As String = "")
 Dim sStr As String
-sStr = CStr(Now()) & " : " & inptStr
+sStr = Format(Now(), "YYYY/MM/DD  HH:MM") & "      " & inptStr
 
-    With SelectOrCreateWs("DEBUG")
-        Range("A1").EntireRow.Insert
-        Range("A1").Value = sStr
-    End With
+ThisWorkbook.Sheets("DEBUG").Range("A1").EntireRow.Insert
+ThisWorkbook.Sheets("DEBUG").Range("A1").Value = sStr
 
 End Sub
 
 
 
-
 ''''FILE OUT PUT VCERSION
-'Sub printLog(inptStr As String, Optional inptFile As String = "")
+'Sub InsertLog(inptStr As String, Optional inptFile As String = "")
 'Dim sPath As String
 'Dim sStr As String
 'sPath = ThisWorkbook.Path & "\" & Switch(inptFile = "", "vbaLog.txt", inptFile <> "", inptFile)
@@ -1148,10 +1634,10 @@ Dim s As Worksheet
 Dim sht As Worksheet
 
 'YET
-'If shtOBJDTL Is Nothing Then printLog ("[FAIL] does not find worksheet, be sure that window frame is only single"): Exit Sub
+'If shtOBJDTL Is Nothing Then InsertLog ("[FAIL] does not find worksheet, be sure that window frame is only single"): Exit Sub
 
-If sSht = "" Then printLog ("Sheet Name Is Empty"): Exit Function
-'If Not sWb = ThisWorkbook.Name Then printLog ("External Workbook : SelectOrAddWs")
+If sSht = "" Then InsertLog ("Sheet Name Is Empty"): Exit Function
+'If Not sWb = ThisWorkbook.Name Then InsertLog ("External Workbook : SelectOrAddWs")
 
 For Each s In sWb.Sheets
     If s.Name = sSht Then
@@ -1316,7 +1802,7 @@ sData = fGetRowData(ThisWorkbook.Name, rRng.Worksheet.Name, sLabel, "A")
 
 '検索キーとの一致なし
 If UBound(sData) = -1 Then
-    Call printLog("fGetRowData fail : " & inptLabel & " " & inptKey & " " & inptSht)
+    Call InsertLog("fGetRowData fail : " & inptLabel & " " & inptKey & " " & inptSht)
     fKey2Val = sErrMsg: Exit Function
 End If
 
@@ -1327,10 +1813,10 @@ Dim sKeyCol As String: sKeyCol = WorksheetFunction.Trim(sData(4))
 Dim sRtnCol As String: sRtnCol = WorksheetFunction.Trim(sData(5))
 
 'エラー出力
-If sWb = "" Or sWb = sErrMsg Then Call printLog("sWb : " & sWb)
-If sWs = "" Or sWs = sErrMsg Then Call printLog("sWs : " & sWs)
-If sKeyCol = "" Or sKeyCol = sErrMsg Then Call printLog("sKeyCol : " & sKeyCol)
-If sRtnCol = "" Or sRtnCol = sErrMsg Then Call printLog("sRtnCol : " & sRtnCol)
+If sWb = "" Or sWb = sErrMsg Then Call InsertLog("sWb : " & sWb)
+If sWs = "" Or sWs = sErrMsg Then Call InsertLog("sWs : " & sWs)
+If sKeyCol = "" Or sKeyCol = sErrMsg Then Call InsertLog("sKeyCol : " & sKeyCol)
+If sRtnCol = "" Or sRtnCol = sErrMsg Then Call InsertLog("sRtnCol : " & sRtnCol)
 
 
 sResult = fGetCellData(sWb, sWs, sKey, sKeyCol, sRtnCol, sErrMsg)
@@ -1340,44 +1826,10 @@ fKey2Val = sResult
 End Function
 
 
-
-
-'値の設定""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-'Function fSetVal(inptKeyCol As String, inptKey As String, inptValCol As String, inptVal As String, inptWsName As String)
-'
-'Dim sWsName As String:  sWsName = inptWsName
-'Dim sKeyCol As String: sKeyCol = inptKeyCol
-'Dim sKey As String: sKey = inptKey
-'Dim sValCol As String: sValCol = inptValCol
-'Dim sVal As String: sVal = inptVal
-'Dim sMatchRow As String
-'Dim sRslt As String
-'Dim rRow As Range
-'On Error Resume Next
-'
-'With ThisWorkbook.Worksheets(sWsName)
-'
-'    Set rRow = .Columns(.Columns(sKeyCol).Column)
-'        If rRow Is Nothing Then fSetVal = False:  Exit Function
-'        sMatchRow = Application.WorksheetFunction.Match(sKey, rRow, 0)
-'        If sMatchRow = "" Then sMatchRow = Application.WorksheetFunction.Match(CLng(sKey), rRow, 0)
-'
-'        If sMatchRow <> "" Then
-'            .Cells(sMatchRow, .Columns(sValCol).Column).Value = inptVal
-'        Else
-'            fSetVal = False: Exit Function
-'        End If
-'
-'    fSetVal = True
-'End With
-'
-'End Function
-
-
 '検索キーからセルデータを取得する""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 Private Function fGetCellData(inptWb As String, inptWs As String, inptKey As String, inptKeyCol As String, inptTargetCol As String, inptErrMsg As String) As String
 
-Dim sWbName As String: sWbName = inptWb
+Dim sWbName As String: sWbName = inptWb: If sWbName = "" Or sWbName = "_" Then sWbName = ThisWorkbook.Name
 Dim sWsName As String: sWsName = inptWs
 Dim sKeyCol As String: sKeyCol = inptKeyCol
 Dim sKey As String: sKey = inptKey
@@ -1393,7 +1845,7 @@ With Workbooks(sWbName).Worksheets(sWsName)
     Dim rColKey As Range
     Set rColKey = .Columns(.Cells.Columns(sKeyCol).Column)
     If rColKey Is Nothing Then
-        Call printLog(">>FAIL : fGetCellData " & vbNewLine & _
+        Call InsertLog("FAIL [fGetCellData] " & vbNewLine & _
                                         "InptKey : " & inptKey & vbNewLine & _
                                          "WbName : " & sWbName & vbNewLine & _
                                          "WsName : " & sWsName)
@@ -1418,7 +1870,7 @@ End Function
 '検索キーから行データを取得する""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 Function fGetRowData(inptWb As String, inptWs As String, inptKey As String, inptKeyCol As String) As Variant
 
-Dim sWbName As String: sWbName = inptWb
+Dim sWbName As String: sWbName = inptWb: If sWbName = "" Or sWbName = "_" Then sWbName = ThisWorkbook.Name
 Dim sWsName As String: sWsName = inptWs
 Dim sKeyCol As String: sKeyCol = inptKeyCol
 Dim sKey As String: sKey = inptKey
@@ -1446,7 +1898,7 @@ fGetRowData = vRslt
 End Function
 
 
-Function fSplit(ByVal inptStr As String, ByVal inptCol As Integer, Optional ByVal inptSplt As String = ",", Optional inptMatch As Boolean = False) As String
+Function fsplit(ByVal inptStr As String, ByVal inptCol As Integer, Optional ByVal inptSplt As String = ",", Optional inptMatch As Boolean = False) As String
 Dim sStr As String: sStr = inptStr
 Dim lCol As Integer: lCol = inptCol
 Dim sSplt As String: sSplt = inptSplt
@@ -1468,63 +1920,9 @@ End If
 
 If inptMatch = True And sRslt = inptStr Then sRslt = ""
 
-fSplit = sRslt
+fsplit = sRslt
 
 End Function
-
-'
-'Function fIndent(inptCmd As String, inptTxt As String, inptLv As Integer, Optional inptMax As Integer = 9, Optional inptIndent As Integer = 6) As String
-'
-'Dim sLhs As String: sLhs = Trim(inptCmd)
-'Dim sRhs As String: sRhs = Trim(inptTxt)
-'Dim IMax As Integer: IMax = inptMax
-'Dim IIdt As Integer: IIdt = inptIndent
-'Dim lRpt As Integer
-'Dim sPls1 As String: sPls = ""
-'
-'If inptLv <= 0 Then fIndent = "Division by zero": Exit Function
-'
-'
-'Select Case sLhs
-'
-'Case "SELECT"
-''2
-'    sPls1 = "  "
-'
-'Case "FROM"
-''2
-'    sPls1 = "  "
-'
-'Case "AND"
-'    sPls1 = "   "
-'
-'Case "OR"
-'    sPls1 = "    "
-'
-'Case "INSERT"
-'    sPls1 = "  "
-'
-'Case "ALTER"
-'    sPls1 = "  "
-'
-'Case "LEFT JOIN"
-'    sPls1 = " "
-'
-'Case ","
-'    sPls1 = "      "
-'
-'End Select
-'
-'
-'fIndent = Application.WorksheetFunction.Rept(" ", IIdt * CInt(inptLv - 1)) _
-'           & sPls1 _
-'           & Application.WorksheetFunction.Rept(" ", IMax - Len(sLhs)) _
-'           & sLhs _
-'           & "  " _
-'           & sRhs
-'
-'End Function
-
 
 
 Sub ooo_SQLOWL_ooo()
@@ -1540,7 +1938,7 @@ End Sub
 'CSV1    CSV2    CSV3    UNIT    FOLDER  NAME    EU  COMMENT DEC1    DEC2    DEC3    BINALY
 '[FUNC]          =IF(A2'="*",D1,fSplit(A2,1,"#"))    =IF(B2'="*",E1,fSplit(B2,1,"#"))    =fSplit(C2,1,"#")   =fSplitBetweenAlter($C2,2,"+EU'=","+C'=")    =fSplit($C2,2,"+C'=")   =fSplitBetweenAlter($C2,2,"DEC:","|","TRUE") =fSplitBetweenAlter($C2,2,"|","|","TRUE")    =IF(fSplit(C2,1,"DEC")'=C2,"",fSplitBetweenAlter($C2,3,"|","+EU",TRUE))  =fReplaceRegx(C2,".*(BIN-?\d+).*","$1")
 
-Sub GetQueryResults(SQLQuery As String, WorkBookName As String, WorkSheetName As String)
+Sub GetQueryResults(SqlQuery As String, WorkBookName As String, WorkSheetName As String)
 
     Dim DataFilePath As String
     Dim cn As ADODB.Connection
@@ -1550,8 +1948,8 @@ Sub GetQueryResults(SQLQuery As String, WorkBookName As String, WorkSheetName As
     Dim RowCount As Long, ColCount As Long
     
     'Exit the procedure if no query was passed in
-    If SQLQuery = "" Then
-            printLog ("SQL_ERR, Query string missing, You didn't enter a query")
+    If SqlQuery = "" Then
+            InsertLog ("SQL_ERR, Query string missing, You didn't enter a query")
         Exit Sub
     End If
     
@@ -1559,7 +1957,7 @@ Sub GetQueryResults(SQLQuery As String, WorkBookName As String, WorkSheetName As
     DataFilePath = WorkBookName
     
     If Dir(DataFilePath) = "" Then
-            printLog ("SQL_ERR, File not found, & Dir(DataFilePath")
+            InsertLog ("SQL_ERR, File not found, & Dir(DataFilePath")
         Exit Sub
     End If
     
@@ -1582,7 +1980,7 @@ Sub GetQueryResults(SQLQuery As String, WorkBookName As String, WorkSheetName As
     rs.ActiveConnection = cn
     rs.CursorType = adOpenStatic
     
-    rs.Source = SQLQuery    'Use the query string that we passed into the procedure
+    rs.Source = SqlQuery    'Use the query string that we passed into the procedure
     
     'Try to open the recordset to return the results of the query
     rs.Open
@@ -1597,7 +1995,7 @@ Sub GetQueryResults(SQLQuery As String, WorkBookName As String, WorkSheetName As
     
     'Exit the procedure if no rows returned
     If RowCount = 0 Then
-            printLog ("SQL_ERR, The query returned no results," & Dir(DataFilePath))
+            InsertLog ("SQL_ERR, The query returned no results," & Dir(DataFilePath))
     End If
     
     'Get the count of columns returned by the query
@@ -1663,9 +2061,9 @@ CloseRecordset:
     
 '    Debug.Print SQLQuery
 
-    printLog ("SQL_ERR, An error occurred after the recordset was opened.")
-    printLog ("Error number: " & Err.Number)
-    printLog ("Error description: " & Err.Description)
+    InsertLog ("SQL_ERR, An error occurred after the recordset was opened.")
+    InsertLog ("Error number: " & Err.Number)
+    InsertLog ("Error description: " & Err.Description)
     Exit Sub
 
 CloseConnection:
@@ -1675,16 +2073,16 @@ CloseConnection:
     Set cn = Nothing
     
    ' Debug.Print SQLQuery
-    printLog ("SQL_ERR, An error occurred after the connection was established.")
-    printLog ("Error number: " & Err.Number)
-    printLog ("Error description: " & Err.Description)
+    InsertLog ("SQL_ERR, An error occurred after the connection was established.")
+    InsertLog ("Error number: " & Err.Number)
+    InsertLog ("Error description: " & Err.Description)
     Exit Sub
     
 'If the connection failed to open we end up here
 EndPoint:
-    printLog ("SQL_ERR, The connection failed to open.")
-    printLog ("Error number: " & Err.Number)
-    printLog ("Error description: " & Err.Description)
+    InsertLog ("SQL_ERR, The connection failed to open.")
+    InsertLog ("Error number: " & Err.Number)
+    InsertLog ("Error description: " & Err.Description)
             
 End Sub
 
@@ -1757,27 +2155,48 @@ End Sub
 Sub ooo_SQL_QUERY_ooo()
 End Sub
 
-Sub sqlTest()
+
+Sub ExEC_SQL_DEF(inptSel As String, Optional inptWhr As String = "", Optional inptDstSht As String = "", Optional inptFrmSht As String = "")
+'ExEC_SQL_DEF "[FILE],[MARK]", "Where MARK NOT IN('')"
+
+Dim sWb As String
+Dim sWsDst As String: sWsDst = inptDstSht
+Dim sWsFrm As String: sWsFrm = inptFrmSht
+Dim sSelect As String: sSelect = inptSel
+Dim sWhere As String: sWhere = inptWhr
+
+If inptFrmSht = "" Then sWsFrm = "MAIN"
+If inptDstSht = "" Then sWsDst = "SQLOUT"
+sWb = ThisWorkbook.Path & "\" & ThisWorkbook.Name
+
+'sSelect = "[FILE],[MARK],[STATUS],[LABEL],[LINE],[C1],[C2],[C3],[C4]"
+
+'sWhere = "Where MARK NOT IN('')"
+'sWhere = "Where MARK NOT IN('M1')"
+
+ExEC_SQL sWb, sWsDst, sWsFrm, sSelect, sWhere
+
+End Sub
+
+
+Sub ExEC_SQL(inptWb As String, inptOutSht As String, inptFrmSht As String, inptSel As String, Optional inptWhr As String = "")
 Dim sSqlQuery As String
-Dim sWbPath As String
-Dim sWbName As String
-Dim sWsName As String
-Dim sWbDBPath As String
-Dim sSelect As String
-Dim sFroSht As String
-Dim sWhere As String
+'Dim sWbPath As String: sWbPath = inptWbPath
+Dim sWb As String: sWb = inptWb
+Dim sWsDst As String: sWsDst = inptOutSht
+'Dim sWbDBPath As String
+Dim sSelect As String: sSelect = inptSel
+Dim sWsFrm As String: sWsFrm = inptFrmSht
+Dim sWhere As String: sWhere = inptWhr
 Dim sSql As String
 'sWbDBPath = " 'C:\Users\Owner\Documents\workspace\DFR3_DB_211004.xlsm' 'Excel 12.0 Xml;HDR=YES' "
 
-sWbName = ThisWorkbook.Path & "\" & ThisWorkbook.Name
-sSelect = "[FILE],[MARK],[STATUS],[LABEL],[LINE],[C1],[C2],[C3],[C4]"
-sFroSht = "[DOWNLOAD$]"
+'sSelect = "[FILE],[MARK],[STATUS],[LABEL],[LINE],[C1],[C2],[C3],[C4]"
+sWsFrm = "[" & sWsFrm & "$]"
 
 Application.ScreenUpdating = False
 
-sWsName = "SQLOUT"
-'sWsName = "SQLOUT_" & Format(Now(), "YYYYMMDDhhmmss")
-With SelectOrCreateWs(sWsName, ThisWorkbook.Name)
+With SelectOrCreateWs(sWsDst, ThisWorkbook.Name)
     .Cells.Clear
 End With
 
@@ -1815,17 +2234,56 @@ sSql = _
     " SELECT " & _
         sSelect & _
     " FROM " & _
-        sFroSht & _
-    " WHERE " & _
-        sWhere
+        sWsFrm
+
+If sWhere <> "" Then
+    sSql = sSql & " " & sWhere
+End If
+
+
+sSql = "select [FILE],[MARK],[LABEL] From [DOWNLOAD$] WHERE MARK IN('●') OR LABEL NOT IN('')"
+
 
 sSqlQuery = sSql
 
 'Run the query with the SQL string
-Call GetQueryResults(sSqlQuery, sWbName, sWsName)
+Call GetQueryResults(sSqlQuery, sWb, sWsDst)
 
 Application.ScreenUpdating = True
 
 End Sub
 
+
+
+Sub EXEC_SQL_QUERY(inptSql As String, Optional inptOutSht As String = "SQL_OUT")
+Dim sWb As String: sWb = ThisWorkbook.Path & "\" & ThisWorkbook.Name
+Dim sWsDst As String: sWsDst = inptOutSht
+Dim sSql As String: sSql = inptSql
+Dim sSqlQuery As String
+'sWbDBPath = " 'C:\Users\Owner\Documents\workspace\DFR3_DB_211004.xlsm' 'Excel 12.0 Xml;HDR=YES' "
+
+'sSql = "select [FILE],[MARK],[LABEL] From [DOWNLOAD$] WHERE MARK IN('●') OR LABEL NOT IN('')"
+
+Application.ScreenUpdating = False
+
+With SelectOrCreateWs(sWsDst, Dir(sWb))
+    .Cells.Clear
+End With
+
+v = "select [FILE],[MARK],[LABEL] From [DOWNLOAD$] "
+v = v & " WHERE [MARK] in('●')"
+v = v & " or LEFT([LABEL], 1) = '['"
+EXEC_SQL_QUERY (v)
+
+sSqlQuery = sSql
+
+'Run the query with the SQL string
+Call GetQueryResults(sSqlQuery, sWb, sWsDst)
+
+Application.ScreenUpdating = True
+
+End Sub
+
+
+'EXEC_SQL_QUERY "select [FILE],[MARK],[LABEL] From [DOWNLOAD$] WHERE mark in('●') or label not in('')"
 
