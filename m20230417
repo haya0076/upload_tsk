@@ -1,0 +1,28 @@
+Private Sub Worksheet_Activate()
+Dim sWb As String: sWb = ThisWorkbook.Path & "\" & ThisWorkbook.Name
+Dim sWsDst As String: sWsDst = ActiveSheet.Name
+Dim sWsFrm As String: sWsFrm = "MAIN"
+Dim sSelectCol As String
+Dim sfrm As String
+Dim sWhere As String
+Dim sQuery As String
+
+sSelectCol = "SELECT "
+sSelectCol = sSelectCol & "["
+sSelectCol = sSelectCol & WorksheetFunction.TextJoin("],[", True, ActiveSheet.Rows(1).Value)
+sSelectCol = sSelectCol & "]"
+
+sfrom = "FROM [" & sWsFrm & "$]"
+
+sWhere = "Where [SCOPE] = 'moveSheet'"
+
+
+sQuery = WorksheetFunction.TextJoin(" ", True, Array(sSelectCol, sfrom, sWhere))
+
+Application.ScreenUpdating = False
+
+Call GetQueryResults(sQuery, sWb, sWsDst)
+
+Application.ScreenUpdating = True
+
+End Sub
