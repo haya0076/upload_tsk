@@ -1,0 +1,285 @@
+'require : Microsoft Scripting Runtime
+Const gWsFrmName = ""
+Const gWsDstName = ThisWorkbook.Name
+
+Const gWsFrmBS = "SHT_BAAN_SAP対比表"
+Const gWsFrmNNN = "SQL" '& 000
+Const gWsDstBS = "LST_BAAN_SAP"
+Const gWsDstNNN = "LST_SQLNNN"
+Dim gWbFrmName As String
+Dim gWbDstName As String
+
+Const gHeade_BS = Array("SQLID", "ID", "名称", "ID", "名称", "SELECT", "WHERE HAVING", "ORDER BY/GROUP BY", "判定", "ID", "名称", "ID", "名称", "備考")
+Const gHeader_SQL = Array("No.", "種別", "接続判定", "ID", "種類", "SQL発行場所", "関連移送", "備考")
+
+Const gChk_Folder = ""
+Const gChk_Ptn_ShtPg = "プログラミング仕様書" 'EASIS_BTnnnn_(SQL一覧)
+Const gChk_Ptn_ShtSql = "SQL一覧" 'EASIS_BTnnnn_(プログラム仕様書)
+
+
+Sub test_dict()
+Dim dict As Object 'Declare a generic Object reference
+Set dict = CreateObject("Scripting.Dictionary") 'Late Binding of the Dictionary
+
+Dim key, val
+key = "Key1": val = "Val1"
+dict.Add key, val
+key = "Key2": val = "Val2"
+dict.Add key, val
+
+'Add item to VBA Dictionary
+If Not dict.Exists(key) Then
+    dict.Add key, val
+End If
+ 
+Debug.Print dict.Count
+
+ 'Print all keys
+For Each key In dict.keys
+   Debug.Print key
+Next key
+ 
+'Print all items
+For Each Item In dict.Items
+   Debug.Print Item
+Next Item
+ 
+'Dispose of VBA Dictionary
+Set dict = Nothing
+
+End Sub
+
+
+Function Get_FileList()
+'iterate forder
+'check sheet,table position
+Dim fsoRoot As Object: Set fsoRoot = CreateObject("Scripting.FileSystemObject")
+Dim fsoSubF As Object: Set fsoSubF = CreateObject("Scripting.FileSystemObject")
+Dim sChkFolder As String: sChkFolder = gChk_Folder
+Dim vSubFolder As Variant
+Dim vFile As Variant
+Dim vArr As Variant: vArr = Array()
+Dim sPthShtName As String: sPthShtName = gChk_Ptn_ShtSql
+Dim oDict As Object: Set oDict = CreateObject("Scripting.Dictionary")
+'Print oDict(KEY)(n)
+
+' >> debug_code
+sChkFolder = "C:\Users\user\OneDrive\ドキュメント\tsk\Test_Folder"
+' << debug_code
+
+With fsoRoot.GetFolder(sChkFolder)
+    For Each vSubFolder In .SubFolders
+    
+        With fsoSubF.GetFolder(vSubFolder)
+            For Each vFile In .Files
+                ReDim Preserve vArr(UBound(vArr) + 1)
+                vArr(UBound(vArr)) = vFile
+            Next vFile
+        End With
+    
+        oDict.Add fReplace(vSubFolder, sChkFolder & "\", ""), vArr
+        
+    Next vSubFolder
+End With
+
+Stop
+
+Set fsoRoot = Nothing
+
+End Function
+
+
+Sub Chk_Format_BkSql()
+Dim sWb As stirng: sWb = gWsFrmName
+Dim v As Variant
+Dim s As String
+
+With Workbooks(gWsFrmName)
+    If Not .Sheet(1).Name = "改定履歴" Then InsertLog ("FALSE : Sheet(1).Name"" = ""改定履歴")
+    If Not .Sheet(2).Name = "SQL一覧" Then InsertLog ("FALSE : Sheet(2).Name"" = ""SQL一覧")
+    If Not .Sheet(3).Name = "BAAN_SAP対比" Then InsertLog ("FALSE : Sheet(3).Name"" = ""BAAN_SAP対比")
+End With
+
+v = gHeade_BS
+'Array("SQLID", "ID", "名称", "ID", "名称", "SELECT", "WHERE HAVING", "ORDER BY/GROUP BY", "判定", "ID", "名称", "ID", "名称", "備考")
+
+With Workbooks(sWb).SheetsSheet("BAAN_SAP対比")
+    .Range(B5).Select
+    For Each s In v
+        If (ActiveCell.Value = s) = False Then InsertLog ("FALSE : " & ActiveSheet.Name & "." & ActiveCell.Value & " = " & s)
+        ActiveCell.Offset(0, 1).Select
+    Next s
+End With
+
+v = gHeader_SQL
+'Array("No.", "種別", "接続判定", "ID", "種類", "SQL発行場所", "関連移送", "備考")
+
+With Workbooks(sWb).SheetsSheet("SQL一覧")
+    .Range(B3).Select
+    For Each s In v
+        If (ActiveCell.Value = s) = False Then InsertLog ("FALSE : " & ActiveSheet.Name & "." & ActiveCell.Value & " = " & s)
+        ActiveCell.Offset(0, 1).Select
+    nest s
+End With
+
+End Sub
+
+
+
+Sub Chk_Format_BkPg()
+Dim sWb As stirng: sWb = gWsFrmName
+Dim v As Variant
+Dim s As String
+
+With Workbooks(gWsFrmName)
+    If Not .Sheet(1).Name = "表示" Then InsertLog ("FALSE : Sheet(1).Name"" = ""表紙")
+    If Not .Sheet(2).Name = "改定履歴" Then InsertLog ("FALSE : Sheet(2).Name"" = ""改定履歴")
+    If Not .Sheet(3).Name = "もくじ" Then InsertLog ("FALSE : Sheet(3).Name"" = ""もくじ")
+    If Not .Sheet(4).Name = "はじめに" Then InsertLog ("FALSE : Sheet(3).Name"" = ""はじめに")
+    If Not .Sheet(5).Name = "ツールIO" Then InsertLog ("FALSE : Sheet(3).Name"" = ""ツールIO")
+    If Not .Sheet(6).Name = "DB接続先" Then InsertLog ("FALSE : Sheet(3).Name"" = ""DB接続先")
+    If Not .Sheet(7).Name = "オブジェクト一覧" Then InsertLog ("FALSE : Sheet(3).Name"" = ""オブジェクト一覧")
+    If Not .Sheet(8).Name = "オブジェクト詳細" Then InsertLog ("FALSE : Sheet(3).Name"" = ""オブジェクト詳細")
+End With
+
+End Sub
+
+
+Sub Exe_ParseWorkbook()
+
+gWbFrmName = "mb_2304.xlsm"
+
+With Workbooks.Add
+    gWbDstName = .Name
+End With
+
+''openWorkbook
+'Workbooks.Open gWbFrmName
+'
+CreateShtBannSap
+'CreateShtSQL
+'
+''closeWorkbook
+'Workbooks(gWbFrmName).Close False
+
+End Sub
+
+
+Sub CreateShtBannSap()
+'BAAN_SAP
+
+    Exe_CreateShtSWO_BannSap
+      'createNewSheet wsDstBS
+
+End Sub
+
+
+Sub CreateShtSQL()
+
+    'create Query Text
+    Exe_CreateQueryText
+    
+    'create db_sql, and replace alias
+    Exe_CreateShtNItems
+    
+    'create db_sql, and replace alias
+    Exe_CreateShtSWO_NItems
+
+End Sub
+
+
+Sub Exe_CreateShtSWO_BannSap()
+Dim wsFrm As String
+Dim wsDst As String
+Dim edLow As Long
+Dim sWbFrm As String: sWbFrm = gWsFrmName
+Dim sWbDst As String: sWbDst = gWsFrmName
+
+Dim DstWsName As String: DstWsName = "LST_BS"
+
+With Workbooks()
+SelectOrCreateWs (DstWsName)
+    
+    
+With Workbooks(sWbFrm).Sheets("BAAN_SAP対比")
+    
+
+    edLow = .Cells(Rows.Count, 2).End(xlUp).Row
+    .Range(.Cells(6, 2), .Cells(edLow, 9)).Copy .Sheets(DstWsName)
+    
+    With .Sheets(DstWsName)
+        .Rows(1).Select
+        .Selection.Insert Shift:=xlDown, CopyOrigin:=xlFormatFromLeftOrAbove
+        .Rows(1).Value = gHeade_BS
+            'Array("SQLID", "ID", "名称", "ID", "名称", "SELECT", "WHERE HAVING", "ORDER BY/GROUP BY", "判定", "ID", "名称", "ID", "名称", "備考")
+    End With
+    
+End With
+
+End Sub
+
+
+Sub Exe_CreateQueryText()
+Dim sWb As String
+Dim i As Long
+Dim sDstWsName As String: sDstWsName = "LST_SQLNNN"
+Dim DstInsRow As Long: DstInsRow = 2
+
+sWb = ""
+
+With Workbooks(sWb)
+    With SelectOrCreateWs(sDstWsName)
+        .Cells(1, 1).Value = "CODE"
+    End With
+    
+    For i = .Sheets("SQL001").Index To .Sheets.Count
+        With .Sheets(i).Select
+            .Range("B3").Select
+                Do Until ActiveCell.Value <> ""
+                    ActiveCell.Offset(1, 0).Select
+                Next
+                
+                Do Until ActiveCell.Value = ""
+                    .Sheets(sDstWsName).Cells(DstInsRow, 1).Value = ActiveCell.Value
+                    DstInsRow = DstInsRow + 1
+                    ActiveCell.Offset(1, 0).Select
+                Next
+        End With
+    End With
+
+End Sub
+    
+
+
+Sub Exe_CreateShtNItems()
+Dim sWb As String
+Dim i As Long
+Dim sDstWsName As String: sDstWsName = "LST_SQLNNN"
+
+sWb = ""
+
+With Workbooks(sWb)
+    With .Sheets(sDstWsName)
+    
+    End With
+End With
+
+
+
+End Sub
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
