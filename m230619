@@ -1,0 +1,57 @@
+
+
+Sub Pg_MakeClosureRect()
+
+
+Dim lCnt_NestLv As Long
+Dim lCnt_Row As Long
+Dim lCol_Code As Long: lCol_Code = fSearchField_TB("CODE", "EDT(MAIN)")
+Dim lCol_Nest As Long: lCol_Nest = fSearchField_TB("NEST", "EDT(MAIN)")
+Dim lCol_Nest_pos As Long:  lCol_pos = fSearchField_TB("NEST_POS", "EDT(MAIN)")
+Dim lCol_Crr As Long
+Dim lPosSt As Long
+Dim lPosEd As Long
+Dim lMax As Long
+
+With ThisWorkbook.Sheets("EDT(MAIN)")
+
+lMax = WorksheetFunction.Max(.Columns(lCol_Nest))
+        
+    For lCnt_NestLv = 1 To lMax
+        lCol_Crr = fSearchField_TB("N(" & lCnt_NestLv & ")", "EDT(MAIN)")
+        If lCol_Crr <> 0 Then .Columns(lCol_Crr).Delete
+        .Columns(lCol_Code + 1).Select
+        Selection.Insert Shift:=xlToRight, CopyOrigin:=xlFormatFromLeftOrAbove
+        .Cells(1, lCol_Code + 1).Value = "N(" & lCnt_NestLv & ")"
+        InsertLog .Columns(lCol_Code + 1).AutoFit = True
+    Next lCnt_NestLv
+
+    For lCnt_NestLv = lMax To 1 Step -1
+    
+        lCol_Crr = fSearchField_TB("N(" & lCnt_NestLv & ")", "EDT(MAIN)")
+        For lCnt_Row = 2 To .Cells(Rows.Count, lCol_Nest).End(xlUp).Row
+
+           If .Cells(lCnt_Row, lCol_Nest).Value = lCnt_NestLv Then
+               lPosSt = lCnt_Row
+               Do
+                   If .Cells(lCnt_Row + 1, lCol_Nest).Value = lCnt_NestLv - 1 Then
+                       lPosEd = lCnt_Row
+                       Exit Do
+                    End If
+                   lCnt_Row = lCnt_Row + 1
+               Loop
+               
+            .Range(.Cells(lPosSt, lCol_Code), .Cells(lPosEd, lCol_Crr)).Select
+            Selection.Borders(xlEdgeLeft).LineStyle = xlContinuous
+            Selection.Borders(xlEdgeTop).LineStyle = xlContinuous
+            Selection.Borders(xlEdgeBottom).LineStyle = xlContinuous
+            Selection.Borders(xlEdgeRight).LineStyle = xlContinuous
+           End If
+        
+        Next lCnt_Row
+    Next lCnt_NestLv
+
+End With
+
+
+End Sub
