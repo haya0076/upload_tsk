@@ -1,0 +1,27 @@
+' 高階関数：関数を引数として受け取り、新しい関数を作成する
+Function Compose(f As Variant, g As Variant) As Variant
+    ' 引数として受け取った関数を組み合わせた新しい関数を返す
+    Compose = Function(x) As Variant
+                  Compose = f(g(x))
+              End Function
+End Function
+
+' テスト用の関数
+Function Increment(x As Integer) As Integer
+    Increment = x + 1
+End Function
+
+Function Double(x As Integer) As Integer
+    Double = 2 * x
+End Function
+
+Sub TestCompose()
+    ' 高階関数Composeを使用して新しい関数を作成
+    Dim f As Variant
+    Set f = Compose(AddressOf Increment, AddressOf Double)
+    
+    ' 新しい関数のテスト
+    Dim result As Integer
+    result = f(5) ' 結果: (5 * 2) + 1 = 11
+    MsgBox result
+End Sub
