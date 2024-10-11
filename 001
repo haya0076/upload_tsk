@@ -1,1 +1,81 @@
 
+Sub QuickSortArrayByHyphenParts()
+    ' 2次元配列のデータをサンプルとして定義
+    Dim data As Variant
+    data = Array( _
+        Array(1, "Alice", "D100-50"), _
+        Array(2, "Bob", "C200-30"), _
+        Array(3, "Charlie", "A300-20"), _
+        Array(4, "David", "B400-70"), _
+        Array(5, "Eve", "A100-10"), _
+        Array(6, "Frank", "C200-60") _
+    )
+    
+    ' クイックソートで、3列目のハイフン前後に基づいてソート
+    QuickSort2DArrayByHyphen data, 0, UBound(data), 3 ' 3列目のハイフン前後でソート
+
+    ' ソート後の結果を確認
+    Dim i As Long
+    For i = LBound(data) To UBound(data)
+        Debug.Print data(i)(0), data(i)(1), data(i)(2)
+    Next i
+End Sub
+
+' クイックソート: ハイフン前部分で降順、ハイフン後部分で昇順にソート
+Sub QuickSort2DArrayByHyphen(arr As Variant, low As Long, high As Long, sortColumn As Integer)
+    Dim pivotIndex As Long
+    If low < high Then
+        ' パーティションを行い、ピボット位置を取得
+        pivotIndex = Partition(arr, low, high, sortColumn)
+        ' ピボットを基準に左右で再帰的にクイックソートを行う
+        QuickSort2DArrayByHyphen arr, low, pivotIndex - 1, sortColumn
+        QuickSort2DArrayByHyphen arr, pivotIndex + 1, high, sortColumn
+    End If
+End Sub
+
+' パーティションを行う: ハイフン前で降順、ハイフン後で昇順
+Function Partition(arr As Variant, low As Long, high As Long, sortColumn As Integer) As Long
+    Dim pivot As Variant
+    Dim i As Long, j As Long
+    Dim temp As Variant
+    Dim pivotBeforeHyphen As String, pivotAfterHyphen As String
+    Dim currentBeforeHyphen As String, currentAfterHyphen As String
+    Dim posPivot As Long, posCurrent As Long
+    
+    ' ピボットを設定（最後の要素）
+    pivot = arr(high)
+    posPivot = InStr(pivot(sortColumn - 1), "-")
+    pivotBeforeHyphen = Left(pivot(sortColumn - 1), posPivot - 1)
+    pivotAfterHyphen = Mid(pivot(sortColumn - 1), posPivot + 1)
+    
+    i = low - 1
+    For j = low To high - 1
+        ' 現在の要素を解析
+        posCurrent = InStr(arr(j)(sortColumn - 1), "-")
+        currentBeforeHyphen = Left(arr(j)(sortColumn - 1), posCurrent - 1)
+        currentAfterHyphen = Mid(arr(j)(sortColumn - 1), posCurrent + 1)
+        
+        ' ハイフン前部分で降順 (大きい方を先に)
+        If currentBeforeHyphen > pivotBeforeHyphen Then
+            i = i + 1
+            temp = arr(i)
+            arr(i) = arr(j)
+            arr(j) = temp
+        ' ハイフン前が同じ場合は、ハイフン後部分で昇順 (小さい方を先に)
+        ElseIf currentBeforeHyphen = pivotBeforeHyphen And currentAfterHyphen < pivotAfterHyphen Then
+            i = i + 1
+            temp = arr(i)
+            arr(i) = arr(j)
+            arr(j) = temp
+        End If
+    Next j
+    
+    ' ピボットを適切な位置に移動
+    temp = arr(i + 1)
+    arr(i + 1) = arr(high)
+    arr(high) = temp
+    
+    Partition = i + 1
+End Function
+
+
