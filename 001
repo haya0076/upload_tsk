@@ -1,19 +1,19 @@
-Sub QuickSortArrayByMedianPivotWithOrder()
+Sub QuickSortArrayByMixedValues()
     ' 2次元配列のデータをサンプルとして定義
     Dim data As Variant
     data = Array( _
-        Array(1, "Alice", "D100-50"), _
-        Array(2, "Bob", "C200-30"), _
-        Array(3, "Charlie", "A300-20"), _
-        Array(4, "David", "B400-70"), _
-        Array(5, "Eve", "A100-10"), _
-        Array(6, "Frank", "C200-60") _
+        Array(1, "Alice", "D100-A500"), _
+        Array(2, "Bob", "C200-A300"), _
+        Array(3, "Charlie", "A300-D100"), _
+        Array(4, "David", "B400-C200"), _
+        Array(5, "Eve", "A100-B500"), _
+        Array(6, "Frank", "C200-A600") _
     )
     
     ' クイックソートで、3列目のハイフン前後に基づいてソート
-    ' ハイフン前の部分：降順 (DESC)
+    ' ハイフン前の部分：昇順 (ASC)
     ' ハイフン後の部分：昇順 (ASC)
-    QuickSort2DArrayByHyphen data, 0, UBound(data), 3, "DESC", "ASC"
+    QuickSort2DArrayByHyphen data, 0, UBound(data), 3, "ASC", "ASC"
 
     ' ソート後の結果を確認
     Dim i As Long
@@ -22,7 +22,7 @@ Sub QuickSortArrayByMedianPivotWithOrder()
     Next i
 End Sub
 
-' クイックソート: 中央値ピボットを選んで、ハイフン前部分と後部分のソート順を指定してソート
+' クイックソート: 中央値ピボットを選んで、ハイフン前後部分のソート順を指定してソート
 Sub QuickSort2DArrayByHyphen(arr As Variant, low As Long, high As Long, sortColumn As Integer, orderBefore As String, orderAfter As String)
     Dim pivotIndex As Long
     If low < high Then
@@ -39,56 +39,35 @@ Function Partition(arr As Variant, low As Long, high As Long, sortColumn As Inte
     Dim pivot As Variant
     Dim i As Long, j As Long
     Dim temp As Variant
-    Dim pivotBeforeHyphen As String, pivotAfterHyphen As String
-    Dim currentBeforeHyphen As String, currentAfterHyphen As String
-    Dim posPivot As Long, posCurrent As Long
+    Dim pivotBeforeAlph As String, pivotBeforeNum As Long
+    Dim pivotAfterAlph As String, pivotAfterNum As Long
+    Dim currentBeforeAlph As String, currentBeforeNum As Long
+    Dim currentAfterAlph As String, currentAfterNum As Long
     
     ' 中央値ピボットを選ぶ
     pivot = MedianOfThree(arr, low, high, sortColumn)
-    posPivot = InStr(pivot(sortColumn - 1), "-")
-    pivotBeforeHyphen = Left(pivot(sortColumn - 1), posPivot - 1)
-    pivotAfterHyphen = Mid(pivot(sortColumn - 1), posPivot + 1)
+    
+    ' ピボットの値をアルファベット部分と数値部分に分割
+    Call SplitAlphNum(arr(high)(sortColumn - 1), pivotBeforeAlph, pivotBeforeNum, pivotAfterAlph, pivotAfterNum)
     
     i = low - 1
     For j = low To high - 1
-        ' 現在の要素を解析
-        posCurrent = InStr(arr(j)(sortColumn - 1), "-")
-        currentBeforeHyphen = Left(arr(j)(sortColumn - 1), posCurrent - 1)
-        currentAfterHyphen = Mid(arr(j)(sortColumn - 1), posCurrent + 1)
+        ' 現在の値をアルファベット部分と数値部分に分割
+        Call SplitAlphNum(arr(j)(sortColumn - 1), currentBeforeAlph, currentBeforeNum, currentAfterAlph, currentAfterNum)
         
         ' ハイフン前部分での比較
-        If orderBefore = "ASC" Then
-            If currentBeforeHyphen < pivotBeforeHyphen Then
+        If CompareAlphNum(currentBeforeAlph, currentBeforeNum, pivotBeforeAlph, pivotBeforeNum, orderBefore) Then
+            i = i + 1
+            temp = arr(i)
+            arr(i) = arr(j)
+            arr(j) = temp
+        ' ハイフン前が同じ場合、ハイフン後部分での比較
+        ElseIf currentBeforeAlph = pivotBeforeAlph And currentBeforeNum = pivotBeforeNum Then
+            If CompareAlphNum(currentAfterAlph, currentAfterNum, pivotAfterAlph, pivotAfterNum, orderAfter) Then
                 i = i + 1
                 temp = arr(i)
                 arr(i) = arr(j)
                 arr(j) = temp
-            End If
-        ElseIf orderBefore = "DESC" Then
-            If currentBeforeHyphen > pivotBeforeHyphen Then
-                i = i + 1
-                temp = arr(i)
-                arr(i) = arr(j)
-                arr(j) = temp
-            End If
-        End If
-        
-        ' ハイフン前部分が同じ場合、ハイフン後部分での比較
-        If currentBeforeHyphen = pivotBeforeHyphen Then
-            If orderAfter = "ASC" Then
-                If currentAfterHyphen < pivotAfterHyphen Then
-                    i = i + 1
-                    temp = arr(i)
-                    arr(i) = arr(j)
-                    arr(j) = temp
-                End If
-            ElseIf orderAfter = "DESC" Then
-                If currentAfterHyphen > pivotAfterHyphen Then
-                    i = i + 1
-                    temp = arr(i)
-                    arr(i) = arr(j)
-                    arr(j) = temp
-                End If
             End If
         End If
     Next j
@@ -99,6 +78,63 @@ Function Partition(arr As Variant, low As Long, high As Long, sortColumn As Inte
     arr(high) = temp
     
     Partition = i + 1
+End Function
+
+' アルファベット部分と数値部分を分割する関数
+Sub SplitAlphNum(value As String, ByRef alphBefore As String, ByRef numBefore As Long, ByRef alphAfter As String, ByRef numAfter As Long)
+    Dim parts() As String
+    parts = Split(value, "-")
+    
+    ' ハイフン前の部分
+    alphBefore = ExtractAlph(parts(0))
+    numBefore = ExtractNum(parts(0))
+    
+    ' ハイフン後の部分
+    alphAfter = ExtractAlph(parts(1))
+    numAfter = ExtractNum(parts(1))
+End Sub
+
+' アルファベット部分を抽出する関数
+Function ExtractAlph(value As String) As String
+    Dim i As Long
+    For i = 1 To Len(value)
+        If Not IsNumeric(Mid(value, i, 1)) Then
+            ExtractAlph = ExtractAlph & Mid(value, i, 1)
+        End If
+    Next i
+End Function
+
+' 数値部分を抽出する関数
+Function ExtractNum(value As String) As Long
+    Dim i As Long
+    Dim numStr As String
+    For i = 1 To Len(value)
+        If IsNumeric(Mid(value, i, 1)) Then
+            numStr = numStr & Mid(value, i, 1)
+        End If
+    Next i
+    If numStr <> "" Then
+        ExtractNum = CLng(numStr)
+    Else
+        ExtractNum = 0
+    End If
+End Function
+
+' アルファベットと数値部分を比較する関数
+Function CompareAlphNum(alph1 As String, num1 As Long, alph2 As String, num2 As Long, order As String) As Boolean
+    If order = "ASC" Then
+        If alph1 < alph2 Or (alph1 = alph2 And num1 < num2) Then
+            CompareAlphNum = True
+        Else
+            CompareAlphNum = False
+        End If
+    ElseIf order = "DESC" Then
+        If alph1 > alph2 Or (alph1 = alph2 And num1 > num2) Then
+            CompareAlphNum = True
+        Else
+            CompareAlphNum = False
+        End If
+    End If
 End Function
 
 ' 中央値ピボットを選択する: 最初、中央、最後の値の中央値を選ぶ
