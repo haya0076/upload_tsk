@@ -1,5 +1,4 @@
-
-Sub QuickSortArrayByHyphenParts()
+Sub QuickSortArrayByMedianPivot()
     ' 2次元配列のデータをサンプルとして定義
     Dim data As Variant
     data = Array( _
@@ -21,7 +20,7 @@ Sub QuickSortArrayByHyphenParts()
     Next i
 End Sub
 
-' クイックソート: ハイフン前部分で降順、ハイフン後部分で昇順にソート
+' クイックソート: 中央値ピボットを選んでハイフン前部分で降順、ハイフン後部分で昇順にソート
 Sub QuickSort2DArrayByHyphen(arr As Variant, low As Long, high As Long, sortColumn As Integer)
     Dim pivotIndex As Long
     If low < high Then
@@ -33,7 +32,7 @@ Sub QuickSort2DArrayByHyphen(arr As Variant, low As Long, high As Long, sortColu
     End If
 End Sub
 
-' パーティションを行う: ハイフン前で降順、ハイフン後で昇順
+' パーティションを行い、中央値ピボットでハイフン前で降順、ハイフン後で昇順にソート
 Function Partition(arr As Variant, low As Long, high As Long, sortColumn As Integer) As Long
     Dim pivot As Variant
     Dim i As Long, j As Long
@@ -42,8 +41,8 @@ Function Partition(arr As Variant, low As Long, high As Long, sortColumn As Inte
     Dim currentBeforeHyphen As String, currentAfterHyphen As String
     Dim posPivot As Long, posCurrent As Long
     
-    ' ピボットを設定（最後の要素）
-    pivot = arr(high)
+    ' 中央値ピボットを選ぶ
+    pivot = MedianOfThree(arr, low, high, sortColumn)
     posPivot = InStr(pivot(sortColumn - 1), "-")
     pivotBeforeHyphen = Left(pivot(sortColumn - 1), posPivot - 1)
     pivotAfterHyphen = Mid(pivot(sortColumn - 1), posPivot + 1)
@@ -61,7 +60,7 @@ Function Partition(arr As Variant, low As Long, high As Long, sortColumn As Inte
             temp = arr(i)
             arr(i) = arr(j)
             arr(j) = temp
-        ' ハイフン前が同じ場合は、ハイフン後部分で昇順 (小さい方を先に)
+        ' ハイフン前が同じ場合は、ハイフンより後の部分で昇順 (小さい方を先に)
         ElseIf currentBeforeHyphen = pivotBeforeHyphen And currentAfterHyphen < pivotAfterHyphen Then
             i = i + 1
             temp = arr(i)
@@ -78,4 +77,23 @@ Function Partition(arr As Variant, low As Long, high As Long, sortColumn As Inte
     Partition = i + 1
 End Function
 
-
+' 中央値ピボットを選択する: 最初、中央、最後の値の中央値を選ぶ
+Function MedianOfThree(arr As Variant, low As Long, high As Long, sortColumn As Integer) As Variant
+    Dim mid As Long
+    mid = (low + high) \ 2
+    
+    ' 最初、中央、最後の3つの要素を取得
+    Dim lowVal As Variant, midVal As Variant, highVal As Variant
+    lowVal = arr(low)
+    midVal = arr(mid)
+    highVal = arr(high)
+    
+    ' 中央値を選択する
+    If (lowVal(sortColumn - 1) > midVal(sortColumn - 1)) Xor (lowVal(sortColumn - 1) > highVal(sortColumn - 1)) Then
+        MedianOfThree = lowVal
+    ElseIf (midVal(sortColumn - 1) > lowVal(sortColumn - 1)) Xor (midVal(sortColumn - 1) > highVal(sortColumn - 1)) Then
+        MedianOfThree = midVal
+    Else
+        MedianOfThree = highVal
+    End If
+End Function
