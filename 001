@@ -17,7 +17,7 @@ Sub QuickSortArrayByMixedValuesTwoColumns()
     ' クイックソートで、2列目のハイフン前後に基づいてソート
     ' ハイフン前の部分：昇順 (ASC)
     ' ハイフン後の部分：昇順 (ASC)
-    QuickSort2DArrayByHyphen data, 0, UBound(data), 2, "ASC", "ASC"
+    QuickSort2DArrayByHyphen data, LBound(data), UBound(data), 2, "ASC", "ASC"
 
     ' ソート後の結果を確認
     Dim i As Long
@@ -50,7 +50,7 @@ Function Partition(arr As Variant, low As Long, high As Long, sortColumn As Inte
     Dim pivotValue As String, currentValue As String
     
     ' 中央値ピボットを選ぶ
-    pivotValue = arr(high)(sortColumn - 1)
+    pivotValue = MedianOfThree(arr, low, high, sortColumn)
     Call SplitAlphNum(pivotValue, pivotBeforeAlph, pivotBeforeNum, pivotAfterAlph, pivotAfterNum)
     
     i = low - 1
@@ -143,20 +143,20 @@ Function CompareAlphNum(alph1 As String, num1 As Long, alph2 As String, num2 As 
 End Function
 
 ' 中央値ピボットを選択する: 最初、中央、最後の値の中央値を選ぶ
-Function MedianOfThree(arr As Variant, low As Long, high As Long, sortColumn As Integer) As Variant
+Function MedianOfThree(arr As Variant, low As Long, high As Long, sortColumn As Integer) As String
     Dim mid As Long
     mid = (low + high) \ 2
     
     ' 最初、中央、最後の3つの要素を取得
-    Dim lowVal As Variant, midVal As Variant, highVal As Variant
-    lowVal = arr(low)
-    midVal = arr(mid)
-    highVal = arr(high)
+    Dim lowVal As String, midVal As String, highVal As String
+    lowVal = arr(low)(sortColumn - 1)
+    midVal = arr(mid)(sortColumn - 1)
+    highVal = arr(high)(sortColumn - 1)
     
-    ' 中央値を選択する
-    If (StrComp(lowVal(sortColumn - 1), midVal(sortColumn - 1), vbTextCompare) > 0) Xor (StrComp(lowVal(sortColumn - 1), highVal(sortColumn - 1), vbTextCompare) > 0) Then
+    ' 中央値を選択する（テキスト比較を使って選択）
+    If (StrComp(lowVal, midVal, vbTextCompare) > 0) Xor (StrComp(lowVal, highVal, vbTextCompare) > 0) Then
         MedianOfThree = lowVal
-    ElseIf (StrComp(midVal(sortColumn - 1), lowVal(sortColumn - 1), vbTextCompare) > 0) Xor (StrComp(midVal(sortColumn - 1), highVal(sortColumn - 1), vbTextCompare) > 0) Then
+    ElseIf (StrComp(midVal, lowVal, vbTextCompare) > 0) Xor (StrComp(midVal, highVal, vbTextCompare) > 0) Then
         MedianOfThree = midVal
     Else
         MedianOfThree = highVal
