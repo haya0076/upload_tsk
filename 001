@@ -1,24 +1,24 @@
-Sub QuickSortArrayByMixedValues()
-    ' 2次元配列のデータをサンプルとして定義
+Sub QuickSortArrayByMixedValuesTwoColumns()
+    ' 2次元配列のデータをサンプルとして定義（2列）
     Dim data As Variant
     data = Array( _
-        Array(1, "Alice", "D100-A500"), _
-        Array(2, "Bob", "C200-A300"), _
-        Array(3, "Charlie", "A300-D100"), _
-        Array(4, "David", "B400-C200"), _
-        Array(5, "Eve", "A100-B500"), _
-        Array(6, "Frank", "C200-A600") _
+        Array(1, "D100-A500"), _
+        Array(2, "C200-A300"), _
+        Array(3, "A300-D100"), _
+        Array(4, "B400-C200"), _
+        Array(5, "A100-B500"), _
+        Array(6, "C200-A600") _
     )
     
-    ' クイックソートで、3列目のハイフン前後に基づいてソート
+    ' クイックソートで、2列目のハイフン前後に基づいてソート
     ' ハイフン前の部分：昇順 (ASC)
     ' ハイフン後の部分：昇順 (ASC)
-    QuickSort2DArrayByHyphen data, 0, UBound(data), 3, "ASC", "ASC"
+    QuickSort2DArrayByHyphen data, 0, UBound(data), 2, "ASC", "ASC"
 
     ' ソート後の結果を確認
     Dim i As Long
     For i = LBound(data) To UBound(data)
-        Debug.Print data(i)(0), data(i)(1), data(i)(2)
+        Debug.Print data(i)(0), data(i)(1)
     Next i
 End Sub
 
@@ -43,17 +43,16 @@ Function Partition(arr As Variant, low As Long, high As Long, sortColumn As Inte
     Dim pivotAfterAlph As String, pivotAfterNum As Long
     Dim currentBeforeAlph As String, currentBeforeNum As Long
     Dim currentAfterAlph As String, currentAfterNum As Long
+    Dim pivotValue As String, currentValue As String
     
     ' 中央値ピボットを選ぶ
-    pivot = MedianOfThree(arr, low, high, sortColumn)
-    
-    ' ピボットの値をアルファベット部分と数値部分に分割
-    Call SplitAlphNum(arr(high)(sortColumn - 1), pivotBeforeAlph, pivotBeforeNum, pivotAfterAlph, pivotAfterNum)
+    pivotValue = arr(high)(sortColumn - 1)
+    Call SplitAlphNum(pivotValue, pivotBeforeAlph, pivotBeforeNum, pivotAfterAlph, pivotAfterNum)
     
     i = low - 1
     For j = low To high - 1
-        ' 現在の値をアルファベット部分と数値部分に分割
-        Call SplitAlphNum(arr(j)(sortColumn - 1), currentBeforeAlph, currentBeforeNum, currentAfterAlph, currentAfterNum)
+        currentValue = arr(j)(sortColumn - 1)
+        Call SplitAlphNum(currentValue, currentBeforeAlph, currentBeforeNum, currentAfterAlph, currentAfterNum)
         
         ' ハイフン前部分での比較
         If CompareAlphNum(currentBeforeAlph, currentBeforeNum, pivotBeforeAlph, pivotBeforeNum, orderBefore) Then
