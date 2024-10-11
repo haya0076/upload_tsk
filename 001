@@ -2,12 +2,16 @@ Sub QuickSortArrayByMixedValuesTwoColumns()
     ' 2次元配列のデータをサンプルとして定義（2列）
     Dim data As Variant
     data = Array( _
-        Array(1, "D100-A500"), _
-        Array(2, "C200-A300"), _
-        Array(3, "A300-D100"), _
-        Array(4, "B400-C200"), _
-        Array(5, "A100-B500"), _
-        Array(6, "C200-A600") _
+        Array(1, "D100-a500"), _
+        Array(2, "B200-A300"), _
+        Array(3, "A300-c100"), _
+        Array(4, "C400-B400"), _
+        Array(5, "b500-C200"), _
+        Array(6, "a100-B300"), _
+        Array(7, "D100-A500"), _
+        Array(8, "C200-C200"), _
+        Array(9, "b100-B500"), _
+        Array(10, "D100-a100") _
     )
     
     ' クイックソートで、2列目のハイフン前後に基づいてソート
@@ -61,7 +65,7 @@ Function Partition(arr As Variant, low As Long, high As Long, sortColumn As Inte
             arr(i) = arr(j)
             arr(j) = temp
         ' ハイフン前が同じ場合、ハイフン後部分での比較
-        ElseIf currentBeforeAlph = pivotBeforeAlph And currentBeforeNum = pivotBeforeNum Then
+        ElseIf StrComp(currentBeforeAlph, pivotBeforeAlph, vbTextCompare) = 0 And currentBeforeNum = pivotBeforeNum Then
             If CompareAlphNum(currentAfterAlph, currentAfterNum, pivotAfterAlph, pivotAfterNum, orderAfter) Then
                 i = i + 1
                 temp = arr(i)
@@ -122,13 +126,15 @@ End Function
 ' アルファベットと数値部分を比較する関数
 Function CompareAlphNum(alph1 As String, num1 As Long, alph2 As String, num2 As Long, order As String) As Boolean
     If order = "ASC" Then
-        If alph1 < alph2 Or (alph1 = alph2 And num1 < num2) Then
+        ' アルファベット部分をテキスト比較（大文字・小文字を区別しない）
+        If StrComp(alph1, alph2, vbTextCompare) < 0 Or (StrComp(alph1, alph2, vbTextCompare) = 0 And num1 < num2) Then
             CompareAlphNum = True
         Else
             CompareAlphNum = False
         End If
     ElseIf order = "DESC" Then
-        If alph1 > alph2 Or (alph1 = alph2 And num1 > num2) Then
+        ' アルファベット部分をテキスト比較（大文字・小文字を区別しない）
+        If StrComp(alph1, alph2, vbTextCompare) > 0 Or (StrComp(alph1, alph2, vbTextCompare) = 0 And num1 > num2) Then
             CompareAlphNum = True
         Else
             CompareAlphNum = False
@@ -148,9 +154,9 @@ Function MedianOfThree(arr As Variant, low As Long, high As Long, sortColumn As 
     highVal = arr(high)
     
     ' 中央値を選択する
-    If (lowVal(sortColumn - 1) > midVal(sortColumn - 1)) Xor (lowVal(sortColumn - 1) > highVal(sortColumn - 1)) Then
+    If (StrComp(lowVal(sortColumn - 1), midVal(sortColumn - 1), vbTextCompare) > 0) Xor (StrComp(lowVal(sortColumn - 1), highVal(sortColumn - 1), vbTextCompare) > 0) Then
         MedianOfThree = lowVal
-    ElseIf (midVal(sortColumn - 1) > lowVal(sortColumn - 1)) Xor (midVal(sortColumn - 1) > highVal(sortColumn - 1)) Then
+    ElseIf (StrComp(midVal(sortColumn - 1), lowVal(sortColumn - 1), vbTextCompare) > 0) Xor (StrComp(midVal(sortColumn - 1), highVal(sortColumn - 1), vbTextCompare) > 0) Then
         MedianOfThree = midVal
     Else
         MedianOfThree = highVal
