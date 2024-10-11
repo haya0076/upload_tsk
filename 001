@@ -1,4 +1,4 @@
-Sub QuickSortArrayByMedianPivot()
+Sub QuickSortArrayByMedianPivotWithOrder()
     ' 2次元配列のデータをサンプルとして定義
     Dim data As Variant
     data = Array( _
@@ -11,7 +11,9 @@ Sub QuickSortArrayByMedianPivot()
     )
     
     ' クイックソートで、3列目のハイフン前後に基づいてソート
-    QuickSort2DArrayByHyphen data, 0, UBound(data), 3 ' 3列目のハイフン前後でソート
+    ' ハイフン前の部分：降順 (DESC)
+    ' ハイフン後の部分：昇順 (ASC)
+    QuickSort2DArrayByHyphen data, 0, UBound(data), 3, "DESC", "ASC"
 
     ' ソート後の結果を確認
     Dim i As Long
@@ -20,20 +22,20 @@ Sub QuickSortArrayByMedianPivot()
     Next i
 End Sub
 
-' クイックソート: 中央値ピボットを選んでハイフン前部分で降順、ハイフン後部分で昇順にソート
-Sub QuickSort2DArrayByHyphen(arr As Variant, low As Long, high As Long, sortColumn As Integer)
+' クイックソート: 中央値ピボットを選んで、ハイフン前部分と後部分のソート順を指定してソート
+Sub QuickSort2DArrayByHyphen(arr As Variant, low As Long, high As Long, sortColumn As Integer, orderBefore As String, orderAfter As String)
     Dim pivotIndex As Long
     If low < high Then
         ' パーティションを行い、ピボット位置を取得
-        pivotIndex = Partition(arr, low, high, sortColumn)
+        pivotIndex = Partition(arr, low, high, sortColumn, orderBefore, orderAfter)
         ' ピボットを基準に左右で再帰的にクイックソートを行う
-        QuickSort2DArrayByHyphen arr, low, pivotIndex - 1, sortColumn
-        QuickSort2DArrayByHyphen arr, pivotIndex + 1, high, sortColumn
+        QuickSort2DArrayByHyphen arr, low, pivotIndex - 1, sortColumn, orderBefore, orderAfter
+        QuickSort2DArrayByHyphen arr, pivotIndex + 1, high, sortColumn, orderBefore, orderAfter
     End If
 End Sub
 
-' パーティションを行い、中央値ピボットでハイフン前で降順、ハイフン後で昇順にソート
-Function Partition(arr As Variant, low As Long, high As Long, sortColumn As Integer) As Long
+' パーティションを行い、ハイフン前後部分のソート順を指定してソート
+Function Partition(arr As Variant, low As Long, high As Long, sortColumn As Integer, orderBefore As String, orderAfter As String) As Long
     Dim pivot As Variant
     Dim i As Long, j As Long
     Dim temp As Variant
@@ -54,18 +56,40 @@ Function Partition(arr As Variant, low As Long, high As Long, sortColumn As Inte
         currentBeforeHyphen = Left(arr(j)(sortColumn - 1), posCurrent - 1)
         currentAfterHyphen = Mid(arr(j)(sortColumn - 1), posCurrent + 1)
         
-        ' ハイフン前部分で降順 (大きい方を先に)
-        If currentBeforeHyphen > pivotBeforeHyphen Then
-            i = i + 1
-            temp = arr(i)
-            arr(i) = arr(j)
-            arr(j) = temp
-        ' ハイフン前が同じ場合は、ハイフンより後の部分で昇順 (小さい方を先に)
-        ElseIf currentBeforeHyphen = pivotBeforeHyphen And currentAfterHyphen < pivotAfterHyphen Then
-            i = i + 1
-            temp = arr(i)
-            arr(i) = arr(j)
-            arr(j) = temp
+        ' ハイフン前部分での比較
+        If orderBefore = "ASC" Then
+            If currentBeforeHyphen < pivotBeforeHyphen Then
+                i = i + 1
+                temp = arr(i)
+                arr(i) = arr(j)
+                arr(j) = temp
+            End If
+        ElseIf orderBefore = "DESC" Then
+            If currentBeforeHyphen > pivotBeforeHyphen Then
+                i = i + 1
+                temp = arr(i)
+                arr(i) = arr(j)
+                arr(j) = temp
+            End If
+        End If
+        
+        ' ハイフン前部分が同じ場合、ハイフン後部分での比較
+        If currentBeforeHyphen = pivotBeforeHyphen Then
+            If orderAfter = "ASC" Then
+                If currentAfterHyphen < pivotAfterHyphen Then
+                    i = i + 1
+                    temp = arr(i)
+                    arr(i) = arr(j)
+                    arr(j) = temp
+                End If
+            ElseIf orderAfter = "DESC" Then
+                If currentAfterHyphen > pivotAfterHyphen Then
+                    i = i + 1
+                    temp = arr(i)
+                    arr(i) = arr(j)
+                    arr(j) = temp
+                End If
+            End If
         End If
     Next j
     
